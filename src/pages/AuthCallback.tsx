@@ -7,20 +7,32 @@ export default function AuthCallback() {
   const navigate = useNavigate();
 
   useEffect(() => {
-    supabase.auth.getSession().then(({ data: { session } }) => {
+    const handleCallback = async () => {
+      // PKCE flow: Supabase redirects with ?code=
+      const params = new URLSearchParams(window.location.search);
+      const code = params.get('code');
+
+      if (code) {
+        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        if (data.session) {
+          navigate('/home', { replace: true });
+        } else {
+          console.error('OAuth callback error:', error);
+          navigate('/?error=oauth', { replace: true });
+        }
+        return;
+      }
+
+      // Implicit flow: check if session already exists in hash
+      const { data: { session } } = await supabase.auth.getSession();
       if (session) {
         navigate('/home', { replace: true });
       } else {
-        // Try to exchange the code/hash for a session
-        supabase.auth.onAuthStateChange((event, session) => {
-          if (event === 'SIGNED_IN' && session) {
-            navigate('/home', { replace: true });
-          } else if (event === 'SIGNED_OUT' || !session) {
-            navigate('/', { replace: true });
-          }
-        });
+        navigate('/?error=oauth', { replace: true });
       }
-    });
+    };
+
+    handleCallback();
   }, [navigate]);
 
   return (
