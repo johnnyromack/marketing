@@ -1,0 +1,277 @@
+================================================================================
+                    RESUMO DAS ATUALIZAÇÕES - 21/01/2026
+                         Sistema de Orçamento de Área
+================================================================================
+
+ÍNDICE:
+1. Migrações de Banco de Dados
+2. Novos Componentes Criados
+3. Arquivos Modificados
+4. Funcionalidades Implementadas
+
+================================================================================
+1. MIGRAÇÕES DE BANCO DE DADOS
+================================================================================
+
+--- Migration 1: Tipo de Orçamento nos Centros de Custo ---
+Arquivo: supabase/migrations/20260120235608_c98ae289-cb39-413b-9dd3-e3a26b723ee0.sql
+
+```sql
+ALTER TABLE public.tipos_custo 
+ADD COLUMN tipo_orcamento TEXT NOT NULL DEFAULT 'proprio';
+
+COMMENT ON COLUMN public.tipos_custo.tipo_orcamento IS 
+'Tipo de orçamento: proprio (exclusivo da área) ou compartilhado (dividido entre áreas)';
+```
+
+--- Migration 2: Distribuição Mensal de Orçamento de Área ---
+Arquivo: supabase/migrations/20260121002524_0e30b0d4-4910-414b-899e-4dd9b4379f4f.sql
+
+```sql
+CREATE TABLE public.orcamento_area_distribuicao (
+  id UUID NOT NULL DEFAULT gen_random_uuid() PRIMARY KEY,
+  orcamento_id UUID NOT NULL REFERENCES public.orcamentos(id) ON DELETE CASCADE,
+  ano INTEGER NOT NULL,
+  mes INTEGER NOT NULL CHECK (mes >= 1 AND mes <= 12),
+  valor_orcado NUMERIC NOT NULL DEFAULT 0,
+  verba_extra NUMERIC NOT NULL DEFAULT 0,
+  observacoes TEXT,
+  created_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  updated_at TIMESTAMP WITH TIME ZONE NOT NULL DEFAULT now(),
+  UNIQUE(orcamento_id, ano, mes)
+);
+
+ALTER TABLE public.orcamento_area_distribuicao ENABLE ROW LEVEL SECURITY;
+
+CREATE POLICY "Authenticated users can view orcamento_area_distribuicao"
+ON public.orcamento_area_distribuicao FOR SELECT TO authenticated USING (true);
+
+CREATE POLICY "Authenticated users can insert orcamento_area_distribuicao"
+ON public.orcamento_area_distribuicao FOR INSERT TO authenticated WITH CHECK (true);
+
+CREATE POLICY "Authenticated users can update orcamento_area_distribuicao"
+ON public.orcamento_area_distribuicao FOR UPDATE TO authenticated USING (true);
+
+CREATE POLICY "Authenticated users can delete orcamento_area_distribuicao"
+ON public.orcamento_area_distribuicao FOR DELETE TO authenticated USING (true);
+
+CREATE TRIGGER update_orcamento_area_distribuicao_updated_at
+BEFORE UPDATE ON public.orcamento_area_distribuicao
+FOR EACH ROW
+EXECUTE FUNCTION public.update_updated_at_column();
+```
+
+================================================================================
+2. NOVOS COMPONENTES CRIADOS
+================================================================================
+
+--- TiposCustoManager.tsx ---
+Caminho: src/components/orcamentos-area/TiposCustoManager.tsx
+
+Funcionalidades:
+- Gerenciamento completo de centros de custo (CRUD)
+- Suporte a tipo de orçamento: próprio ou compartilhado
+- Toggle de ativo/inativo
+- Validação de duplicados
+- Proteção contra exclusão de registros em uso
+
+Interface:
+```typescript
+export interface TipoCusto {
+  id: string;
+  nome: string;
+  descricao: string | null;
+  tipo_orcamento: 'proprio' | 'compartilhado';
+  ativo: boolean;
+}
+
+interface TiposCustoManagerProps {
+  tiposCusto: TipoCusto[];
+  canEdit: boolean;
+  onRefresh: () => void;
+}
+```
+
+--- ResumoCentroCusto.tsx ---
+Caminho: src/components/orcamentos-area/ResumoCentroCusto.tsx
+
+Funcionalidades:
+- Resumo visual de orçamentos por centro de custo
+- Separação por tipo (próprio vs compartilhado)
+- Gráfico de barras comparativo
+- Indicadores de saldo com cores (verde/vermelho)
+- Barras de progresso de utilização
+- Filtros por ano e marca
+
+Cards exibidos:
+- Orçamento Próprio (total orcado, utilizado, saldo)
+- Orçamento Compartilhado (total orcado, utilizado, saldo)
+- Total Geral (soma de ambos)
+
+--- BudgetAlertBadge.tsx ---
+Caminho: src/components/orcamentos-area/BudgetAlertBadge.tsx
+
+Funcionalidades:
+- Badge de status baseado em utilização
+- Níveis de alerta:
+  * Disponível (< 50%) - verde
+  * Em uso (50-79%) - azul
+  * Atenção (80-99%) - amarelo
+  * Excedido (≥ 100%) - vermelho
+
+```typescript
+interface BudgetAlertBadgeProps {
+  valorOrcado: number;
+  valorUtilizado: number;
+  showPercentage?: boolean;
+}
+```
+
+--- OrcamentoAreaDistribuicaoDialog.tsx ---
+Caminho: src/components/orcamentos-area/OrcamentoAreaDistribuicaoDialog.tsx
+
+Funcionalidades:
+- Dialog para distribuição mensal de orçamento
+- Edição de valores por mês
+- Campo de verba extra por mês
+- Validação do total vs orçamento aprovado
+- Indicadores visuais de status (verde/amarelo/vermelho)
+- Salvamento em lote de todos os meses
+
+Interface:
+```typescript
+interface OrcamentoAreaDistribuicaoDialogProps {
+  orcamento: {
+    id: string;
+    marca: string;
+    ano: number;
+    valor_orcado: number;
+  };
+  open: boolean;
+  onOpenChange: (open: boolean) => void;
+}
+```
+
+--- index.ts (exports) ---
+Caminho: src/components/orcamentos-area/index.ts
+
+```typescript
+export { TiposCustoManager, type TipoCusto } from './TiposCustoManager';
+export { ResumoCentroCusto } from './ResumoCentroCusto';
+export { BudgetAlertBadge } from './BudgetAlertBadge';
+export { OrcamentoAreaDistribuicaoDialog } from './OrcamentoAreaDistribuicaoDialog';
+```
+
+================================================================================
+3. ARQUIVOS MODIFICADOS
+================================================================================
+
+--- OrcamentosArea.tsx ---
+Caminho: src/pages/OrcamentosArea.tsx
+
+Alterações principais:
+- Reorganização em 3 abas: Resumo, Orçamentos, Centros de Custo
+- Integração com novos componentes
+- Adição de alertas visuais na tabela (cores de fundo)
+- Progress bar de utilização por linha
+- Botão de ação para distribuição mensal
+- Aba de Centros de Custo restrita a admins
+
+Estrutura de abas:
+1. Resumo: Cards de totais + gráfico comparativo + lista detalhada
+2. Orçamentos: Tabela completa com filtros, alertas e ações
+3. Centros de Custo: Gerenciador CRUD (apenas admins)
+
+--- types.ts (auto-gerado) ---
+Caminho: src/integrations/supabase/types.ts
+
+Alterações:
+- Adição do tipo tipos_custo.tipo_orcamento
+- Adição da tabela orcamento_area_distribuicao
+
+================================================================================
+4. FUNCIONALIDADES IMPLEMENTADAS
+================================================================================
+
+4.1 GERENCIAMENTO DE CENTROS DE CUSTO
+-------------------------------------
+- Criar novos centros de custo com nome, descrição e tipo
+- Editar centros de custo existentes
+- Excluir centros de custo (com proteção de FK)
+- Ativar/desativar centros de custo
+- Classificar como orçamento próprio ou compartilhado
+
+4.2 RESUMO VISUAL POR CENTRO DE CUSTO
+--------------------------------------
+- Cards com totais separados por tipo de orçamento
+- Gráfico de barras horizontal com valores por centro
+- Lista detalhada com:
+  * Nome do centro de custo
+  * Badge indicando tipo (próprio/compartilhado)
+  * Valores orçado, utilizado e saldo
+  * Barra de progresso de utilização
+  * Percentual de uso
+
+4.3 ALERTAS AUTOMÁTICOS DE UTILIZAÇÃO
+--------------------------------------
+Níveis de alerta implementados:
+- Disponível: utilização < 50% (badge verde)
+- Em uso: utilização 50-79% (badge azul)  
+- Atenção: utilização 80-99% (badge amarelo, linha com fundo amarelo)
+- Excedido: utilização ≥ 100% (badge vermelho, linha com fundo vermelho)
+
+4.4 DISTRIBUIÇÃO MENSAL DE ORÇAMENTO
+------------------------------------
+- Dialog com tabela de 12 meses
+- Campos editáveis:
+  * Valor orçado por mês
+  * Verba extra por mês
+  * Observações por mês
+- Validações:
+  * Total distribuído vs orçamento aprovado
+  * Indicador visual de status
+- Persistência no banco de dados
+
+================================================================================
+ESQUEMA DE CORES DOS ALERTAS
+================================================================================
+
+Badges:
+- Disponível: bg-green-100 text-green-800 border-green-300
+- Em uso: bg-blue-100 text-blue-800 border-blue-300
+- Atenção: bg-yellow-100 text-yellow-800 border-yellow-300
+- Excedido: bg-red-100 text-red-800 border-red-300
+
+Linhas da tabela:
+- Normal: sem destaque
+- Atenção (≥80%): bg-yellow-50 dark:bg-yellow-950/20
+- Excedido (≥100%): bg-red-50 dark:bg-red-950/20
+
+================================================================================
+ESTRUTURA DE DADOS
+================================================================================
+
+tipos_custo:
+- id: UUID (PK)
+- nome: TEXT (unique)
+- descricao: TEXT (nullable)
+- tipo_orcamento: TEXT ('proprio' | 'compartilhado')
+- ativo: BOOLEAN (default true)
+- created_at: TIMESTAMPTZ
+- updated_at: TIMESTAMPTZ
+
+orcamento_area_distribuicao:
+- id: UUID (PK)
+- orcamento_id: UUID (FK -> orcamentos)
+- ano: INTEGER
+- mes: INTEGER (1-12)
+- valor_orcado: NUMERIC (default 0)
+- verba_extra: NUMERIC (default 0)
+- observacoes: TEXT (nullable)
+- created_at: TIMESTAMPTZ
+- updated_at: TIMESTAMPTZ
+- UNIQUE(orcamento_id, ano, mes)
+
+================================================================================
+                              FIM DO DOCUMENTO
+================================================================================

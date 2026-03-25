@@ -1,0 +1,289 @@
+@import url("https://fonts.googleapis.com/css2?family=Roboto:wght@400;500;600;700&display=swap");
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ROMACK.AI Brand Identity - Design System
+   Based on Brandbook: https://brandbookromack.lovable.app
+   
+   Brand Colors:
+   - Magenta: #E91E8C (327 83% 52%)
+   - Pink: #FF47B2 (327 100% 64%)
+   - Coral: #FF6B6B (0 100% 71%)
+   - Orange: #FF9E2C (32 100% 59%)
+   - Gold: #FFB81C (43 100% 55%)
+   - Dark: #141416 (240 5% 8%)
+*/
+
+@layer base {
+  :root {
+    /* Light mode - usando cores claras */
+    --background: 0 0% 98%;
+    --foreground: 240 5% 8%;
+
+    --card: 0 0% 100%;
+    --card-foreground: 240 5% 8%;
+
+    --popover: 0 0% 100%;
+    --popover-foreground: 240 5% 8%;
+
+    /* Primary: Magenta from brand */
+    --primary: 327 83% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Pink */
+    --secondary: 327 100% 64%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 240 5% 90%;
+    --muted-foreground: 240 5% 40%;
+
+    /* Accent: Gold */
+    --accent: 43 100% 55%;
+    --accent-foreground: 240 5% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5% 85%;
+    --input: 240 5% 85%;
+    --ring: 327 83% 52%;
+
+    --radius: 0.75rem;
+
+    /* Dashboard specific tokens */
+    --success: 142 76% 36%;
+    --success-foreground: 0 0% 100%;
+    --warning: 43 100% 55%;
+    --warning-foreground: 240 5% 8%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    /* Chart colors - New palette */
+    --chart-1: 19 100% 60%;
+    --chart-2: 146 39% 63%;
+    --chart-3: 198 38% 52%;
+    --chart-4: 34 100% 65%;
+    --chart-5: 202 60% 75%;
+    --chart-6: 199 89% 48%;
+
+    /* Platform colors */
+    --meta: 214 89% 52%;
+    --meta-foreground: 0 0% 100%;
+    --google: 4 90% 58%;
+    --google-foreground: 0 0% 100%;
+    --tiktok: 0 0% 0%;
+    --tiktok-foreground: 0 0% 100%;
+
+    /* AI gradient (brand-aligned: magenta → gold) */
+    --ai-gradient-from: 327 83% 52%;
+    --ai-gradient-to: 43 100% 55%;
+
+    /* Danger (alias for destructive, used by alerts) */
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
+
+    --sidebar-background: 0 0% 100%;
+    --sidebar-foreground: 240 5% 8%;
+    --sidebar-primary: 327 83% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 43 100% 55%;
+    --sidebar-accent-foreground: 240 5% 8%;
+    --sidebar-border: 240 5% 85%;
+    --sidebar-ring: 327 83% 52%;
+    --sidebar: 0 0% 100%;
+
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.05);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 1px 2px -1px hsl(0 0% 0% / 0.1);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 2px 4px -1px hsl(0 0% 0% / 0.1);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 4px 6px -1px hsl(0 0% 0% / 0.1);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.1), 0 8px 10px -1px hsl(0 0% 0% / 0.1);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.25);
+  }
+
+  .dark {
+    /* Dark mode - Default for ROMACK.AI */
+    --background: 240 5% 8%;
+    --foreground: 0 0% 98%;
+
+    --card: 240 5% 12%;
+    --card-foreground: 0 0% 98%;
+
+    --popover: 240 5% 15%;
+    --popover-foreground: 0 0% 98%;
+
+    /* Primary: Magenta from brand */
+    --primary: 327 83% 52%;
+    --primary-foreground: 0 0% 100%;
+
+    /* Secondary: Pink */
+    --secondary: 327 100% 64%;
+    --secondary-foreground: 0 0% 100%;
+
+    --muted: 240 5% 25%;
+    --muted-foreground: 240 5% 65%;
+
+    /* Accent: Gold */
+    --accent: 43 100% 55%;
+    --accent-foreground: 240 5% 8%;
+
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 5% 20%;
+    --input: 240 5% 20%;
+    --ring: 327 83% 52%;
+
+    /* Dashboard specific tokens */
+    --success: 142 71% 45%;
+    --success-foreground: 0 0% 100%;
+    --warning: 43 100% 55%;
+    --warning-foreground: 240 5% 8%;
+    --info: 199 89% 48%;
+    --info-foreground: 0 0% 100%;
+
+    /* Chart colors - New palette */
+    --chart-1: 19 100% 70%;
+    --chart-2: 146 39% 72%;
+    --chart-3: 198 38% 62%;
+    --chart-4: 34 100% 75%;
+    --chart-5: 202 60% 85%;
+    --chart-6: 199 89% 55%;
+
+    /* Platform colors */
+    --meta: 214 89% 60%;
+    --meta-foreground: 0 0% 100%;
+    --google: 4 90% 65%;
+    --google-foreground: 0 0% 100%;
+    --tiktok: 0 0% 100%;
+    --tiktok-foreground: 0 0% 0%;
+
+    /* AI gradient (brand-aligned: magenta → gold) */
+    --ai-gradient-from: 327 83% 60%;
+    --ai-gradient-to: 43 100% 60%;
+
+    /* Danger (alias for destructive, used by alerts) */
+    --danger: 0 84% 60%;
+    --danger-foreground: 0 0% 100%;
+
+    --sidebar-background: 240 5% 10%;
+    --sidebar-foreground: 0 0% 98%;
+    --sidebar-primary: 327 83% 52%;
+    --sidebar-primary-foreground: 0 0% 100%;
+    --sidebar-accent: 43 100% 55%;
+    --sidebar-accent-foreground: 240 5% 8%;
+    --sidebar-border: 240 5% 20%;
+    --sidebar-ring: 327 83% 52%;
+    --sidebar: 240 5% 12%;
+
+    --shadow-2xs: 0 1px 3px 0px hsl(0 0% 0% / 0.2);
+    --shadow-xs: 0 1px 3px 0px hsl(0 0% 0% / 0.2);
+    --shadow-sm: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 1px 2px -1px hsl(0 0% 0% / 0.2);
+    --shadow-md: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 2px 4px -1px hsl(0 0% 0% / 0.2);
+    --shadow-lg: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 4px 6px -1px hsl(0 0% 0% / 0.2);
+    --shadow-xl: 0 1px 3px 0px hsl(0 0% 0% / 0.3), 0 8px 10px -1px hsl(0 0% 0% / 0.2);
+    --shadow-2xl: 0 1px 3px 0px hsl(0 0% 0% / 0.5);
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+
+  body {
+    @apply bg-background text-foreground antialiased;
+    font-family: 'Roboto', system-ui, sans-serif;
+  }
+}
+
+@layer utilities {
+  .glass {
+    @apply bg-card/80 backdrop-blur-sm;
+  }
+
+  /* ROMACK.AI Brand Gradient */
+  .gradient-brand {
+    background: linear-gradient(135deg, #E91E8C 0%, #FF47B2 25%, #FF6B6B 50%, #FF9E2C 75%, #FFB81C 100%);
+  }
+
+  .gradient-brand-text {
+    background: linear-gradient(135deg, #E91E8C 0%, #FF47B2 25%, #FF6B6B 50%, #FF9E2C 75%, #FFB81C 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+  }
+
+  .gradient-brand-horizontal {
+    background: linear-gradient(90deg, #E91E8C 0%, #FF47B2 25%, #FF6B6B 50%, #FF9E2C 75%, #FFB81C 100%);
+  }
+
+  .gradient-brand-subtle {
+    background: linear-gradient(135deg, rgba(233, 30, 140, 0.1) 0%, rgba(255, 184, 28, 0.1) 100%);
+  }
+}
+
+/* Print styles for report export */
+@media print {
+  @page {
+    size: A4;
+    margin: 1cm;
+  }
+
+  body {
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    background: white !important;
+    color: black !important;
+  }
+
+  /* Hide everything except print content */
+  body > *:not(.print-container) {
+    display: none !important;
+  }
+
+  /* Report print container */
+  .print-report {
+    display: block !important;
+    background: white !important;
+    color: black !important;
+    padding: 0 !important;
+    max-width: 100% !important;
+  }
+
+  .print-report * {
+    color-adjust: exact !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+  }
+
+  /* Ensure cards have visible borders */
+  .print-report .print-card {
+    border: 1px solid #e5e5e5 !important;
+    background: white !important;
+    box-shadow: none !important;
+    break-inside: avoid;
+    page-break-inside: avoid;
+  }
+
+  /* Header styling for print */
+  .print-report .print-header {
+    background: #f8f8f8 !important;
+    border-bottom: 2px solid #e5e5e5 !important;
+    padding: 16px !important;
+    margin-bottom: 16px !important;
+  }
+
+  /* Chart visibility */
+  .print-report svg {
+    max-width: 100% !important;
+  }
+
+  /* Hide buttons and interactive elements */
+  .print-hidden {
+    display: none !important;
+  }
+}

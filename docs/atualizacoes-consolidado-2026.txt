@@ -1,0 +1,373 @@
+================================================================================
+         REGISTRO CONSOLIDADO DE ATUALIZAÇÕES — JANEIRO A MARÇO 2026
+                          Romack Vision • Publicidade Raiz
+================================================================================
+
+ÍNDICE:
+  1. Orçamento de Área e Centros de Custo (21/01)
+  2. Autenticação com Google e Melhorias de Login (27/01)
+  3. Correções de Warnings do React (27/01)
+  4. Integração Meta Ads e Google Ads (Fev/2026)
+  5. Dashboard de Performance — Filtros Avançados (Fev/2026)
+  6. Simulador de Conversão com IA (Fev/2026)
+  7. Importação de Mídia Off com IA (Fev/2026)
+  8. Central de Ajuda Visual e Interativa (Mar/2026)
+  9. Diagnóstico Geral e Segurança
+ 10. Estrutura de Dados Atual
+
+================================================================================
+1. ORÇAMENTO DE ÁREA E CENTROS DE CUSTO (21/01/2026)
+================================================================================
+
+Migrações de Banco de Dados:
+- Adição de coluna tipo_orcamento (próprio/compartilhado) na tabela tipos_custo
+- Criação da tabela orcamento_area_distribuicao (distribuição mensal)
+  * Campos: orcamento_id, ano, mes, valor_orcado, verba_extra, observacoes
+  * Constraint UNIQUE(orcamento_id, ano, mes)
+  * RLS habilitado com policies de CRUD para authenticated
+
+Novos Componentes:
+- TiposCustoManager.tsx — CRUD completo de centros de custo
+  * Suporte a tipo próprio/compartilhado
+  * Toggle ativo/inativo
+  * Validação de duplicados e proteção contra exclusão em uso
+
+- ResumoCentroCusto.tsx — Resumo visual por centro de custo
+  * Cards separados (próprio, compartilhado, total geral)
+  * Gráfico de barras comparativo
+  * Indicadores de saldo com cores e barras de progresso
+
+- BudgetAlertBadge.tsx — Badge de status baseado em utilização
+  * Disponível (< 50%) — verde
+  * Em uso (50-79%) — azul
+  * Atenção (80-99%) — amarelo
+  * Excedido (≥ 100%) — vermelho
+
+- OrcamentoAreaDistribuicaoDialog.tsx — Distribuição mensal de orçamento
+  * Edição de valores e verba extra por mês
+  * Validação total vs orçamento aprovado
+
+Página Atualizada — OrcamentosArea.tsx:
+- Reorganizada em 3 abas: Resumo, Orçamentos, Centros de Custo
+- Alertas visuais na tabela (cores de fundo por nível)
+- Progress bar de utilização por linha
+- Aba de Centros de Custo restrita a admins
+
+================================================================================
+2. AUTENTICAÇÃO COM GOOGLE (27/01/2026)
+================================================================================
+
+Arquivo: src/pages/Auth.tsx
+
+Funcionalidades:
+- Botão de login com Google e ícone oficial SVG
+- Função handleGoogleSignIn usando supabase.auth.signInWithOAuth
+- Estado de carregamento isGoogleLoading
+- Redirecionamento automático após autenticação
+- Separador visual "ou continue com email"
+
+Configuração necessária:
+- Google Cloud Console: adicionar URLs de redirect autorizadas
+  * https://nzmherisqehvzhmsxmeb.supabase.co/auth/v1/callback
+  * https://publicidaderaiz.lovable.app
+
+================================================================================
+3. MELHORIAS DE UX NO LOGIN (27/01/2026)
+================================================================================
+
+Toggle de Mostrar/Ocultar Senha:
+- Ícone Eye/EyeOff para alternar visibilidade
+- Botão não focável (tabIndex={-1}) para melhor navegação
+- Label atualizado de "Email" para "E-mail"
+
+Correções de forwardRef:
+- RaizLogo.tsx e ThemeLogo.tsx convertidos para usar forwardRef
+- displayName adicionado em ambos
+- Eliminação de warnings no console do React
+
+================================================================================
+4. INTEGRAÇÃO META ADS E GOOGLE ADS (Fev/2026)
+================================================================================
+
+Tabelas criadas:
+- ads_integrations — Credenciais OAuth (tokens, conta, plataforma)
+- ads_campaigns — Campanhas sincronizadas (métricas, orçamento, status)
+- ads_creatives — Anúncios/criativos por campanha
+
+Edge Functions implementadas:
+- meta-ads-auth — Iniciar OAuth do Meta
+- meta-ads-callback — Callback OAuth do Meta
+- meta-ads-sync — Sincronizar campanhas e anúncios do Meta
+- google-ads-auth — Iniciar OAuth do Google
+- google-ads-callback — Callback OAuth do Google
+- google-ads-sync — Sincronizar campanhas do Google Ads
+
+Página criada — Integracoes.tsx:
+- Botões para conectar Meta e Google
+- Lista de contas conectadas com status
+- Opção de desconectar
+- Sincronização manual por conta
+
+Dashboard de Mídia On atualizado:
+- Seção "Campanhas Sincronizadas" com dados das plataformas
+- Métricas de impressões, cliques, gastos, CTR
+- Filtro por plataforma
+
+================================================================================
+5. DASHBOARD DE PERFORMANCE — FILTROS AVANÇADOS (Fev/2026)
+================================================================================
+
+Multi-seleção de Marcas e Unidades:
+- Filtros com checkbox permitindo selecionar múltiplas marcas/unidades
+- Filtro de unidades vinculado dinamicamente às marcas selecionadas
+- Limpeza automática de seleções órfãs
+- Filtragem inteligente de registros "Geral" para evitar duplicidade
+
+Filtro de Período por Data:
+- Componente MonthFilter com seleção de range de datas
+- Suporte a período de comparação (benchmark)
+- Seleção visual de meses disponíveis
+
+KPI de Matrículas:
+- Novo KPI card para matrículas (Real vs Orçado vs CA)
+- Ícone GraduationCap
+- Grid atualizado para 6 colunas
+
+Aba de Eventos:
+- Nova aba "Eventos" no dashboard
+- Componente EventsSection para exibição de dados de eventos
+- Ícone Calendar na aba
+
+Análise com IA:
+- Botão flutuante AIAnalysisButton (Sparkles)
+- AIAnalysisDialog para análise automatizada dos dados
+- Edge function ai-analysis para processamento
+- Suporte a análise de publicidade e mídia
+
+================================================================================
+6. SIMULADOR DE CONVERSÃO COM IA (Fev/2026)
+================================================================================
+
+Página criada — SimuladorConversao.tsx
+
+Componentes:
+- InputSidebar — Painel lateral com parâmetros de entrada
+- ConversionCurveEditor — Editor de curva de conversão
+- CurrencyInput — Input monetário formatado
+- DistributionChart — Gráfico de distribuição
+- MediaDistribution — Distribuição entre mídias
+- MetricCard — Cards de métricas
+- MonthlyDistributionTable — Tabela de distribuição mensal
+- ReportDialog — Geração de relatório
+- ScenarioComparison — Comparação de cenários
+- AISimulationDialog — Simulação assistida por IA
+
+Edge Function — simulador-ai:
+- Processamento de cenários com modelos de IA
+- Geração de previsões e recomendações
+
+================================================================================
+7. IMPORTAÇÃO DE MÍDIA OFF COM IA (Fev/2026)
+================================================================================
+
+Componente — MidiaOffAIImportDialog.tsx:
+- Upload de arquivo (CSV, Excel, PDF)
+- Processamento por IA para extração de dados
+- Preview de dados extraídos antes de salvar
+- Mapeamento inteligente de colunas
+
+Edge Function — midia-off-ai-import:
+- Parsing de documentos com IA
+- Normalização de dados para formato do sistema
+
+================================================================================
+8. CENTRAL DE AJUDA VISUAL E INTERATIVA (Mar/2026)
+================================================================================
+
+Página completamente refeita — Help.tsx (892 linhas)
+
+Estrutura de Abas:
+1. Início — Visão geral, primeiros passos, ciclo de vida dos registros
+2. Tutoriais — Passo a passo por módulo com imagens anotadas
+3. Dashboards — Guias visuais dos dashboards com capturas de tela
+4. FAQ — Perguntas frequentes organizadas por categoria
+5. Glossário — Dicionário de termos do sistema
+
+Imagens Anotadas (src/assets/help/):
+- tut-home.jpg — Tela inicial com navegação lateral
+- tut-dashboard-performance.jpg — Dashboard com filtros e KPIs
+- tut-dashboard-tabela.jpg — Visão tabela com agrupamentos
+- tut-dashboard-graficos.jpg — Visão gráficos (pizza, barras, evolução)
+- tut-dashboard-midia.jpg — Dashboard de mídia com breakdown
+- tut-filtros.jpg — Sistema de filtros multi-select
+
+Funcionalidades:
+- Sistema de callouts numerados (①②③) nas imagens
+- Legendas explicativas sob cada screenshot
+- Tutorial interativo com expand/collapse por seção
+- Cards de primeiros passos com ícones e rotas
+- Ciclo de vida visual: Rascunho → Pendente → Aprovado
+- Glossário com 12+ termos (CPL, CAC, Saving, A-1, etc.)
+- FAQ com Accordion organizado por categoria
+
+Tutoriais documentados:
+- Gerenciamento de Usuários (5 roles: Admin > Gestor > Editor > Leitor > User)
+- Dados de Performance (filtros, KPIs, comparação CA)
+- Mídia On (cadastro, fornecedores, orçamento)
+- Mídia Off (localizações, saving, bonificação)
+- Eventos (custos detalhados, geolocalização)
+- Brindes (categorias, quantidades, unitários)
+- Orçamentos por Campanha (distribuição, verba extra)
+- Controle Orçamentário (chamados, pagamentos, centros de custo)
+- Orçamento de Área (distribuição mensal, alertas)
+- Simulador de Conversão (cenários, IA)
+
+================================================================================
+9. DIAGNÓSTICO GERAL E SEGURANÇA
+================================================================================
+
+Status: TOTALMENTE FUNCIONAL
+
+Módulos Operacionais:
+┌──────────────────────────┬──────────────┬──────────────┐
+│ Módulo                   │ Registros    │ Total Orçado │
+├──────────────────────────┼──────────────┼──────────────┤
+│ Mídia On                 │ 70+          │ R$ 4.635.664 │
+│ Mídia Off                │ 67+          │ R$ 2.599.745 │
+│ Eventos                  │ 35+          │ R$ 1.086.456 │
+│ Brindes                  │ 34+          │ R$ 458.922   │
+│ Campanhas                │ Operacional  │ Integrado    │
+│ Controle Orçamentário    │ Operacional  │ Integrado    │
+│ Centros de Custo         │ Operacional  │ Integrado    │
+│ Simulador de Conversão   │ Operacional  │ IA integrada │
+│ Integrações Ads          │ Operacional  │ Meta + Google│
+└──────────────────────────┴──────────────┴──────────────┘
+
+Segurança Implementada:
+- RLS (Row Level Security): 130+ políticas em 19+ tabelas
+- Autenticação JWT via Supabase Auth
+- Login com Google OAuth
+- Validação em Edge Functions
+- Sanitização com DOMPurify
+- Hierarquia de permissões: Admin > Gestor > Editor > Leitor > User
+- Tabela separada de roles (user_roles) — prevenção de escalação
+- Função has_role() como SECURITY DEFINER
+
+Edge Functions ativas:
+- admin-create-user
+- admin-reset-password
+- ai-analysis
+- google-ads-auth / callback / sync
+- meta-ads-auth / callback / sync
+- mapbox-geocode
+- midia-off-ai-import
+- simulador-ai
+
+================================================================================
+10. ESTRUTURA DE DADOS ATUAL
+================================================================================
+
+Tabelas Principais:
+- publicidade_dados — Dados de performance por marca/unidade/mês
+- midia_on — Registros de mídia digital
+- midia_off — Registros de mídia offline com geolocalização
+- eventos — Eventos com custos detalhados (evento_custos)
+- brindes — Brindes por categoria
+- campanhas — Campanhas com distribuição por mídia e mês
+- orcamentos — Orçamentos com distribuição de área
+- controle_orcamentario — Controle de custos e pagamentos
+
+Tabelas de Suporte:
+- marcas / unidades — Cadastro de marcas e unidades
+- fornecedores — Cadastro de fornecedores
+- tipos_custo — Centros de custo (próprio/compartilhado)
+- profiles — Dados adicionais de usuários
+- user_roles — Permissões (admin, gestor, editor, leitor, user)
+- activity_logs — Log de auditoria
+
+Tabelas de Integração:
+- ads_integrations — Conexões OAuth (Meta/Google)
+- ads_campaigns — Campanhas sincronizadas
+- ads_creatives — Anúncios/criativos
+
+Tabelas de Distribuição:
+- campanha_midia_distribuicao — Distribuição por tipo de mídia
+- campanha_mensal_distribuicao — Distribuição mensal por campanha
+- orcamento_area_distribuicao — Distribuição mensal de orçamento de área
+
+Functions no Banco:
+- get_all_publicidade_dados(p_status)
+- get_publicidade_totals(p_marca, p_unidade, p_year_from, ...)
+- get_midia_totals(p_ano)
+- has_role(_user_id, _role)
+- has_any_role(_user_id, _roles[])
+
+Enums:
+- app_role: admin, gestor, editor, leitor, user
+
+================================================================================
+ARQUIVOS CRIADOS OU MODIFICADOS DESDE JANEIRO/2026
+================================================================================
+
+Páginas:
+- src/pages/Auth.tsx (modificado — Google OAuth, toggle senha)
+- src/pages/OrcamentosArea.tsx (modificado — 3 abas, alertas)
+- src/pages/SimuladorConversao.tsx (criado)
+- src/pages/Integracoes.tsx (criado)
+- src/pages/Help.tsx (refeito — central de ajuda visual)
+- src/pages/GestorApproval.tsx (criado)
+- src/pages/Fornecedores.tsx (criado)
+- src/pages/MarcasUnidades.tsx (criado)
+- src/pages/ActivityLogs.tsx (criado)
+- src/pages/MidiaDashboard.tsx (modificado — campanhas sync)
+- src/pages/Dashboard.tsx (modificado — multi-select, eventos, IA)
+
+Componentes Novos:
+- src/components/orcamentos-area/* (4 componentes)
+- src/components/simulador/* (10 componentes)
+- src/components/ai/* (2 componentes)
+- src/components/maps/* (2 componentes)
+- src/components/midia/MidiaOffAIImportDialog.tsx
+- src/components/midia/CsvImportDialog.tsx
+- src/components/dashboard/EventsSection.tsx
+- src/components/dashboard/MonthFilter.tsx
+- src/components/dashboard/DashboardTable.tsx
+- src/components/midia-dashboard/SyncedCampaignsSection.tsx
+- src/components/midia-dashboard/MidiaOffMonthlyChart.tsx
+
+Componentes Modificados:
+- src/components/RaizLogo.tsx (forwardRef)
+- src/components/ThemeLogo.tsx (forwardRef)
+- src/components/dashboard/DashboardFilters.tsx (multi-select)
+- src/components/dashboard/KPICard.tsx (comparação CA)
+
+Edge Functions:
+- supabase/functions/ai-analysis/index.ts
+- supabase/functions/simulador-ai/index.ts
+- supabase/functions/midia-off-ai-import/index.ts
+- supabase/functions/meta-ads-auth/index.ts
+- supabase/functions/meta-ads-callback/index.ts
+- supabase/functions/meta-ads-sync/index.ts
+- supabase/functions/google-ads-auth/index.ts
+- supabase/functions/google-ads-callback/index.ts
+- supabase/functions/google-ads-sync/index.ts
+- supabase/functions/mapbox-geocode/index.ts
+- supabase/functions/admin-create-user/index.ts
+- supabase/functions/admin-reset-password/index.ts
+
+Assets de Ajuda:
+- src/assets/help/tut-home.jpg
+- src/assets/help/tut-dashboard-performance.jpg
+- src/assets/help/tut-dashboard-tabela.jpg
+- src/assets/help/tut-dashboard-graficos.jpg
+- src/assets/help/tut-dashboard-midia.jpg
+- src/assets/help/tut-filtros.jpg
+- src/assets/help/dashboard-midia.jpg
+- src/assets/help/dashboard-performance.jpg
+- src/assets/help/formulario-cadastro.jpg
+- src/assets/help/gestao-usuarios.jpg
+- src/assets/help/orcamentos.jpg
+
+================================================================================
+                              FIM DO DOCUMENTO
+================================================================================

@@ -1,0 +1,22 @@
+project_id = "nzmherisqehvzhmsxmeb"
+
+[functions.meta-ads-auth]
+verify_jwt = false
+
+[functions.meta-ads-callback]
+verify_jwt = false
+
+[functions.meta-ads-sync]
+verify_jwt = false
+
+[functions.google-ads-auth]
+verify_jwt = false
+
+[functions.google-ads-callback]
+verify_jwt = false
+
+[functions.google-ads-sync]
+verify_jwt = false
+
+[functions.ai-analysis]
+verify_jwt = false

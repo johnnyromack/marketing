@@ -1,0 +1,214 @@
+================================================================================
+                    RESUMO DAS ATUALIZAÇÕES - 27/01/2026
+                         Melhorias e Correções do Sistema
+================================================================================
+
+ÍNDICE:
+1. Autenticação com Google
+2. Melhorias de UX na Página de Login
+3. Correções de Warnings do React
+4. Diagnóstico Completo do Sistema
+5. Recomendações de Segurança
+
+================================================================================
+1. AUTENTICAÇÃO COM GOOGLE
+================================================================================
+
+--- Implementação do Login com Google ---
+Arquivo: src/pages/Auth.tsx
+
+Funcionalidades:
+- Botão de login com Google com ícone oficial
+- Função handleGoogleSignIn para autenticação OAuth
+- Estado de carregamento isGoogleLoading
+- Redirecionamento automático após autenticação
+- Separador visual "ou continue com email"
+
+Código implementado:
+```typescript
+const handleGoogleSignIn = async () => {
+  setIsGoogleLoading(true);
+  const { error } = await supabase.auth.signInWithOAuth({
+    provider: 'google',
+    options: {
+      redirectTo: `${window.location.origin}/`,
+    },
+  });
+  setIsGoogleLoading(false);
+  if (error) {
+    toast({
+      title: 'Erro ao entrar com Google',
+      description: error.message,
+      variant: 'destructive',
+    });
+  }
+};
+```
+
+Configuração necessária no Google Cloud Console:
+- Adicionar URLs de redirect autorizadas:
+  * https://nzmherisqehvzhmsxmeb.supabase.co/auth/v1/callback
+  * https://publicidaderaiz.lovable.app
+
+================================================================================
+2. MELHORIAS DE UX NA PÁGINA DE LOGIN
+================================================================================
+
+--- Toggle de Mostrar/Ocultar Senha ---
+Arquivo: src/pages/Auth.tsx
+
+Funcionalidades:
+- Ícone Eye/EyeOff para alternar visibilidade da senha
+- Estado showPassword para controlar visibilidade
+- Botão não focável (tabIndex={-1}) para melhor navegação
+
+Código implementado:
+```typescript
+const [showPassword, setShowPassword] = useState(false);
+
+<Input
+  type={showPassword ? "text" : "password"}
+  className="pl-10 pr-10"
+/>
+<button
+  type="button"
+  onClick={() => setShowPassword(!showPassword)}
+  className="absolute right-3 top-1/2 -translate-y-1/2"
+  tabIndex={-1}
+>
+  {showPassword ? <EyeOff /> : <Eye />}
+</button>
+```
+
+--- Atualização de Rótulo ---
+- Label alterado de "Email" para "E-mail" (com hífen)
+
+================================================================================
+3. CORREÇÕES DE WARNINGS DO REACT
+================================================================================
+
+--- Correção de forwardRef ---
+Arquivos: 
+- src/components/RaizLogo.tsx
+- src/components/ThemeLogo.tsx
+
+Problema:
+- Warnings no console sobre componentes que recebiam ref sem usar forwardRef
+
+Solução aplicada:
+```typescript
+// Antes
+export function RaizLogo({ className, alt }: RaizLogoProps) {
+  return <img src={logoSrc} alt={alt} className={className} />;
+}
+
+// Depois
+export const RaizLogo = forwardRef<HTMLImageElement, RaizLogoProps>(
+  ({ className = "h-8 w-auto", alt = "Raiz Educação" }, ref) => {
+    // ... lógica do componente
+    return <img ref={ref} src={logoSrc} alt={alt} className={className} />;
+  }
+);
+RaizLogo.displayName = 'RaizLogo';
+```
+
+Componentes atualizados:
+- RaizLogo: Logo da Raiz Educação com troca automática dark/light
+- ThemeLogo: Logo da RomackVision com troca automática dark/light
+
+================================================================================
+4. DIAGNÓSTICO COMPLETO DO SISTEMA
+================================================================================
+
+--- Status Geral: TOTALMENTE FUNCIONAL ---
+
+Módulos de Orçamento Operacionais:
+┌─────────────────────┬──────────────┬─────────────┐
+│ Módulo              │ Registros    │ Total Orçado│
+├─────────────────────┼──────────────┼─────────────┤
+│ Mídia On            │ 70 registros │ R$ 4.635.664│
+│ Mídia Off           │ 67 registros │ R$ 2.599.745│
+│ Eventos             │ 35 registros │ R$ 1.086.456│
+│ Brindes             │ 34 registros │ R$ 458.922  │
+│ Campanhas           │ Operacional  │ Integrado   │
+│ Controle Orçamentário│ Operacional │ Integrado   │
+│ Centros de Custo    │ Operacional  │ Integrado   │
+└─────────────────────┴──────────────┴─────────────┘
+
+Segurança Implementada:
+- RLS (Row Level Security): 130 políticas em 19 tabelas
+- Autenticação JWT via Supabase Auth
+- Validação em Edge Functions
+- Sanitização com DOMPurify
+- Hierarquia de permissões: Admin > Gestor > Editor > Leitor
+
+Integrações Funcionais:
+- Google OAuth para login
+- Mapbox para geolocalização
+- OpenAI/Gemini para análise com IA
+- Importação em massa com IA (Mídia Off)
+
+================================================================================
+5. RECOMENDAÇÕES DE SEGURANÇA
+================================================================================
+
+--- Prioridade Média ---
+
+Ativar Proteção de Senhas Vazadas (Leaked Password Protection):
+- Localização: Authentication → Providers → Email
+- Funcionalidade: Verifica senhas contra vazamentos conhecidos (HaveIBeenPwned)
+- Impacto: Bloqueia uso de senhas comprometidas em cadastros e trocas
+
+--- Prioridade Baixa ---
+
+1. Atualização futura para React 19 (quando estável)
+2. Adicionar rate limiting em endpoints públicos
+
+================================================================================
+ARQUIVOS MODIFICADOS NESTA ATUALIZAÇÃO
+================================================================================
+
+src/pages/Auth.tsx
+- Adicionado login com Google (botão + função)
+- Adicionado toggle de mostrar/ocultar senha
+- Atualizado label de Email para E-mail
+- Adicionado estado isGoogleLoading e showPassword
+
+src/components/RaizLogo.tsx
+- Convertido para usar forwardRef
+- Adicionado displayName
+- Ref passado para elemento img
+
+src/components/ThemeLogo.tsx
+- Convertido para usar forwardRef
+- Adicionado displayName
+- Ref passado para elemento img
+
+================================================================================
+CHECKLIST PARA APLICAR NO PROJETO MASTER
+================================================================================
+
+[ ] 1. Copiar alterações de src/pages/Auth.tsx
+      - handleGoogleSignIn function
+      - Botão de Google com ícone oficial
+      - Toggle de mostrar/ocultar senha
+      - Estado showPassword e isGoogleLoading
+
+[ ] 2. Copiar alterações de src/components/RaizLogo.tsx
+      - forwardRef wrapper
+      - displayName
+
+[ ] 3. Copiar alterações de src/components/ThemeLogo.tsx
+      - forwardRef wrapper
+      - displayName
+
+[ ] 4. Configurar Google OAuth no projeto master
+      - Adicionar URLs de redirect no Google Cloud Console
+      - Habilitar provider Google no Supabase Auth
+
+[ ] 5. Ativar Leaked Password Protection
+      - Authentication → Providers → Email → Leaked Password Protection
+
+================================================================================
+                              FIM DO DOCUMENTO
+================================================================================

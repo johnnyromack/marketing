@@ -1,0 +1,12 @@
+export { DashboardFilters } from './DashboardFilters';
+export { DateRangeFilter } from './DateRangeFilter';
+export { MonthFilter } from './MonthFilter';
+export type { DateRange } from './DateRangeFilter';
+export { EventsSection } from './EventsSection';
+export { KPICard } from './KPICard';
+export { DashboardTable } from './DashboardTable';
+export { LeadsEvolutionChart } from './LeadsEvolutionChart';
+export { BrandPerformanceChart } from './BrandPerformanceChart';
+export { InvestmentPieChart } from './InvestmentPieChart';
+export { CACCPLChart } from './CACCPLChart';
+export { PerformanceTable } from './PerformanceTable';
