@@ -8,28 +8,33 @@ export default function AuthCallback() {
 
   useEffect(() => {
     const handleCallback = async () => {
-      // PKCE flow: Supabase redirects with ?code=
+      // Implicit flow: #access_token= in hash
+      const hash = window.location.hash;
+      if (hash && hash.includes('access_token=')) {
+        const params = new URLSearchParams(hash.substring(1));
+        const access_token = params.get('access_token');
+        const refresh_token = params.get('refresh_token');
+        if (access_token && refresh_token) {
+          const { data } = await supabase.auth.setSession({ access_token, refresh_token });
+          if (data.session) {
+            navigate('/home', { replace: true });
+            return;
+          }
+        }
+      }
+
+      // PKCE flow: ?code= in query string
       const params = new URLSearchParams(window.location.search);
       const code = params.get('code');
-
       if (code) {
-        const { data, error } = await supabase.auth.exchangeCodeForSession(code);
+        const { data } = await supabase.auth.exchangeCodeForSession(code);
         if (data.session) {
           navigate('/home', { replace: true });
-        } else {
-          console.error('OAuth callback error:', error);
-          navigate('/?error=oauth', { replace: true });
+          return;
         }
-        return;
       }
 
-      // Implicit flow: check if session already exists in hash
-      const { data: { session } } = await supabase.auth.getSession();
-      if (session) {
-        navigate('/home', { replace: true });
-      } else {
-        navigate('/?error=oauth', { replace: true });
-      }
+      navigate('/', { replace: true });
     };
 
     handleCallback();
