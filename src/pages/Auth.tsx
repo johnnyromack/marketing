@@ -23,7 +23,7 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Handle OAuth redirect: access_token in URL hash
+  // Handle OAuth implicit flow: #access_token= in URL hash
   useEffect(() => {
     const hash = window.location.hash;
     if (hash && hash.includes('access_token=')) {
@@ -31,15 +31,12 @@ const Auth = () => {
       const access_token = params.get('access_token');
       const refresh_token = params.get('refresh_token');
       if (access_token && refresh_token) {
-        supabase.auth.setSession({ access_token, refresh_token }).then(({ data }) => {
-          if (data.session) {
-            window.history.replaceState({}, '', '/');
-            navigate('/home', { replace: true });
-          }
-        });
+        window.history.replaceState({}, '', '/');
+        supabase.auth.setSession({ access_token, refresh_token });
+        // onAuthStateChange will fire SIGNED_IN → useAuth sets user → next useEffect navigates
       }
     }
-  }, [navigate]);
+  }, []);
 
   useEffect(() => {
     const checkPasswordStatus = async () => {
@@ -103,7 +100,7 @@ const Auth = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/auth/callback`,
+        redirectTo: `${window.location.origin}/`,
       },
     });
     setIsGoogleLoading(false);
