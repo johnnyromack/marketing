@@ -130,42 +130,31 @@ async function syncAdAccount(
   );
   console.log(`  Found ${campaigns.length} campaigns (all statuses)`);
 
-  const normalizeStatus = (s: string) => {
-    const u = s.toUpperCase();
-    if (u === "ACTIVE") return "active";
-    if (u === "PAUSED") return "paused";
-    return "archived";
-  };
-
-  // Batch upsert all campaigns in ONE call
-  if (campaigns.length > 0) {
-    await supabase.from("platform_campaigns").upsert(
-      campaigns.map((c: any) => ({
-        account_id: account.id,
-        campaign_external_id: c.id,
-        name: c.name,
-        status: normalizeStatus(c.status),
-        objective: c.objective || null,
-        daily_budget: c.daily_budget ? parseFloat(c.daily_budget) / 100 : null,
-        lifetime_budget: c.lifetime_budget ? parseFloat(c.lifetime_budget) / 100 : null,
-        start_date: c.start_time ? c.start_time.split("T")[0] : null,
-        end_date: c.stop_time ? c.stop_time.split("T")[0] : null,
-      })),
-      { onConflict: "account_id,campaign_external_id" }
-    );
-  }
-
-  // Fetch all IDs in ONE query to build the map
+  // Build campaign map
   const campaignMap: Record<string, string> = {};
-  if (campaigns.length > 0) {
-    const { data: dbCampaigns } = await supabase
+  for (const campaign of campaigns) {
+    const rawStatus = campaign.status.toUpperCase();
+    let normalizedStatus = "paused";
+    if (rawStatus === "ACTIVE") normalizedStatus = "active";
+    else if (rawStatus === "PAUSED") normalizedStatus = "paused";
+    else normalizedStatus = "archived";
+
+    const { data: cData } = await supabase
       .from("platform_campaigns")
-      .select("id, campaign_external_id")
-      .eq("account_id", account.id)
-      .in("campaign_external_id", campaigns.map((c: any) => c.id));
-    for (const row of dbCampaigns || []) {
-      campaignMap[row.campaign_external_id] = row.id;
-    }
+      .upsert({
+        account_id: account.id,
+        campaign_external_id: campaign.id,
+        name: campaign.name,
+        status: normalizedStatus,
+        objective: campaign.objective,
+        daily_budget: campaign.daily_budget ? parseFloat(campaign.daily_budget) / 100 : null,
+        lifetime_budget: campaign.lifetime_budget ? parseFloat(campaign.lifetime_budget) / 100 : null,
+        start_date: campaign.start_time ? campaign.start_time.split("T")[0] : null,
+        end_date: campaign.stop_time ? campaign.stop_time.split("T")[0] : null,
+      }, { onConflict: "account_id,campaign_external_id" })
+      .select("id").single();
+
+    if (cData) campaignMap[campaign.id] = cData.id;
   }
 
   // 5. ACCOUNT-LEVEL INSIGHTS (single paginated call for ALL campaigns)
@@ -204,28 +193,23 @@ async function syncAdAccount(
 
     if (missingCampaignIds.size > 0) {
       console.log(`  Creating ${missingCampaignIds.size} campaigns from insights (DELETED/ARCHIVED)`);
-      const missingArr = [...missingCampaignIds];
-      await supabase.from("platform_campaigns").upsert(
-        missingArr.map(extId => ({
-          account_id: account.id,
-          campaign_external_id: extId,
-          name: insightsData.find((i: any) => i.campaign_id === extId)?.campaign_name || `Campaign ${extId}`,
-          status: "archived",
-        })),
-        { onConflict: "account_id,campaign_external_id" }
-      );
-      const { data: missingDbRows } = await supabase
-        .from("platform_campaigns")
-        .select("id, campaign_external_id")
-        .eq("account_id", account.id)
-        .in("campaign_external_id", missingArr);
-      for (const row of missingDbRows || []) {
-        campaignMap[row.campaign_external_id] = row.id;
+      for (const extId of missingCampaignIds) {
+        const insightRow = insightsData.find((i: any) => i.campaign_id === extId);
+        const { data: cData } = await supabase
+          .from("platform_campaigns")
+          .upsert({
+            account_id: account.id,
+            campaign_external_id: extId,
+            name: insightRow?.campaign_name || `Campaign ${extId}`,
+            status: "archived",
+          }, { onConflict: "account_id,campaign_external_id" })
+          .select("id").single();
+        if (cData) campaignMap[extId] = cData.id;
       }
     }
 
     // Batch upsert metrics
-    const batchSize = 500;
+    const batchSize = 50;
     for (let i = 0; i < insightsData.length; i += batchSize) {
       const batch = insightsData.slice(i, i + batchSize);
       const upsertRows = [];
@@ -281,141 +265,42 @@ async function syncAdAccount(
     console.error(`  Insights error:`, e);
   }
 
-  // 6. Sync ads for ACTIVE and PAUSED campaigns — parallel fetch + batch upsert
+  // 6. Sync ads for ACTIVE and PAUSED campaigns
   let adsProcessed = 0;
   const activeCampaigns = campaigns.filter((c: any) => ["ACTIVE", "PAUSED"].includes(c.status.toUpperCase()));
-  if (activeCampaigns.length > 0) {
-    const adsPerCampaign = await Promise.all(
-      activeCampaigns.map(async (campaign: any) => {
-        const cid = campaignMap[campaign.id];
-        if (!cid) return [];
+  for (const campaign of activeCampaigns) {
+    const cid = campaignMap[campaign.id];
+    if (!cid) continue;
+    try {
+      const ads = await fetchAllPages(
+        `${campaign.id}/ads?fields=id,name,status,creative{id,title,body,thumbnail_url,effective_object_story_id}&limit=500`,
+        accessToken
+      );
+      for (const ad of ads) {
         try {
-          const ads = await fetchAllPages(
-            `${campaign.id}/ads?fields=id,name,status,creative{id,title,body,thumbnail_url,effective_object_story_id}&limit=500`,
-            accessToken
-          );
-          return ads.map((ad: any) => {
-            const adStatus = ad.status?.toUpperCase() === "ACTIVE" ? "active" :
-              ad.status?.toUpperCase() === "PAUSED" ? "paused" : "archived";
-            let previewUrl: string | null = null;
-            const storyId = ad.creative?.effective_object_story_id;
-            if (storyId?.includes("_")) {
-              const parts = storyId.split("_");
-              previewUrl = `https://www.facebook.com/${parts[0]}/posts/${parts[1]}`;
-            }
-            return {
-              campaign_id: cid,
-              ad_external_id: ad.id,
-              name: ad.name || `Ad ${ad.id}`,
-              status: adStatus,
-              headline: ad.creative?.title || null,
-              description: ad.creative?.body || null,
-              type: "meta_ad",
-              thumbnail_url: ad.creative?.thumbnail_url || null,
-              preview_url: previewUrl,
-            };
-          });
-        } catch { return []; }
-      })
-    );
-    const allAds = adsPerCampaign.flat();
-    if (allAds.length > 0) {
-      const adBatchSize = 200;
-      for (let i = 0; i < allAds.length; i += adBatchSize) {
-        await supabase.from("platform_ads").upsert(allAds.slice(i, i + adBatchSize), { onConflict: "campaign_id,ad_external_id" });
-      }
-      adsProcessed = allAds.length;
-    }
-  }
-
-  // 7. Fetch ad-level insights and save to platform_ad_metrics
-  try {
-    const timeRangeEncoded = encodeURIComponent(JSON.stringify({ since: timeRange.since, until: timeRange.until }));
-    const adInsightsUrl = `${formattedAccountId}/insights?fields=ad_id,ad_name,impressions,clicks,spend,actions,purchase_roas&level=ad&time_range=${timeRangeEncoded}&time_increment=1&limit=500`;
-    console.log(`  Fetching ad-level insights...`);
-
-    const adInsightsResp = await fetch(`https://graph.facebook.com/v21.0/${adInsightsUrl}`, {
-      headers: { Authorization: `Bearer ${accessToken}` },
-    });
-    const adInsightsData = await adInsightsResp.json();
-
-    let allAdInsights: any[] = adInsightsData.data || [];
-    let nextAdUrl = adInsightsData.paging?.next || null;
-    while (nextAdUrl) {
-      const pageResp = await fetch(nextAdUrl, { headers: { Authorization: `Bearer ${accessToken}` } });
-      const pageData = await pageResp.json();
-      allAdInsights = allAdInsights.concat(pageData.data || []);
-      nextAdUrl = pageData.paging?.next || null;
-    }
-    console.log(`  Got ${allAdInsights.length} ad insight rows`);
-
-    if (allAdInsights.length > 0) {
-      // Build map of ad_external_id -> internal platform_ads.id
-      const adExternalIds = [...new Set(allAdInsights.map((i: any) => i.ad_id))];
-      const { data: dbAds } = await supabase
-        .from("platform_ads")
-        .select("id, ad_external_id")
-        .in("ad_external_id", adExternalIds);
-
-      const adIdMap: Record<string, string> = {};
-      for (const row of dbAds || []) {
-        adIdMap[row.ad_external_id] = row.id;
-      }
-
-      const adMetricRows: any[] = [];
-      for (const insight of allAdInsights) {
-        const internalAdId = adIdMap[insight.ad_id];
-        if (!internalAdId) continue;
-
-        const impressions = parseInt(insight.impressions || "0");
-        const clicks = parseInt(insight.clicks || "0");
-        const spend = parseFloat(insight.spend || "0");
-        let conversions = 0;
-
-        if (insight.actions) {
-          const conversionTypes = [
-            "purchase", "omni_purchase",
-            "lead", "onsite_conversion.lead_grouped", "offsite_conversion.fb_pixel_lead",
-            "complete_registration", "offsite_conversion.fb_pixel_complete_registration",
-            "submit_application", "contact", "schedule",
-            "offsite_conversion.fb_pixel_purchase",
-          ];
-          for (const action of insight.actions) {
-            if (conversionTypes.includes(action.action_type)) {
-              conversions += parseInt(action.value || "0");
-            }
+          const adStatus = ad.status?.toUpperCase() === "ACTIVE" ? "active" :
+            ad.status?.toUpperCase() === "PAUSED" ? "paused" : "archived";
+          let previewUrl: string | null = null;
+          const storyId = ad.creative?.effective_object_story_id;
+          if (storyId?.includes("_")) {
+            const parts = storyId.split("_");
+            previewUrl = `https://www.facebook.com/${parts[0]}/posts/${parts[1]}`;
           }
-        }
-
-        const ctr = impressions > 0 ? (clicks / impressions) * 100 : 0;
-        const cpc = clicks > 0 ? spend / clicks : 0;
-
-        adMetricRows.push({
-          ad_id: internalAdId,
-          date: insight.date_start,
-          impressions,
-          clicks,
-          spend,
-          conversions,
-          ctr,
-          cpc,
-        });
+          await supabase.from("platform_ads").upsert({
+            campaign_id: cid,
+            ad_external_id: ad.id,
+            name: ad.name || `Ad ${ad.id}`,
+            status: adStatus,
+            headline: ad.creative?.title || null,
+            description: ad.creative?.body || null,
+            type: "meta_ad",
+            thumbnail_url: ad.creative?.thumbnail_url || null,
+            preview_url: previewUrl,
+          }, { onConflict: "campaign_id,ad_external_id" });
+          adsProcessed++;
+        } catch { /* skip */ }
       }
-
-      if (adMetricRows.length > 0) {
-        const adMetricBatchSize = 500;
-        for (let i = 0; i < adMetricRows.length; i += adMetricBatchSize) {
-          const { error } = await supabase
-            .from("platform_ad_metrics")
-            .upsert(adMetricRows.slice(i, i + adMetricBatchSize), { onConflict: "ad_id,date" });
-          if (error) console.error(`  Ad metrics batch error:`, error);
-        }
-        metricsRows += adMetricRows.length;
-        console.log(`  Saved ${adMetricRows.length} ad metric rows`);
-      }
-    }
-  } catch (e) {
-    console.error(`  Ad insights error:`, e);
+    } catch { /* no ads */ }
   }
 
   console.log(`  Done: ${campaigns.length} campaigns, ${metricsRows} metrics, ${adsProcessed} ads`);
@@ -427,13 +312,13 @@ Deno.serve(async (req) => {
     return new Response("ok", { headers: corsHeaders });
   }
 
+  const supabase = createClient(
+    Deno.env.get("SUPABASE_URL")!,
+    Deno.env.get("SUPABASE_SERVICE_ROLE_KEY")!
+  );
+
   let logId: string | null = null;
   try {
-    const supabaseUrl = Deno.env.get("SUPABASE_URL");
-    const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
-    console.log(`Boot check — URL: ${supabaseUrl ? "ok" : "MISSING"}, KEY: ${supabaseKey ? "ok" : "MISSING"}`);
-    if (!supabaseUrl || !supabaseKey) throw new Error("Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY");
-    const supabase = createClient(supabaseUrl, supabaseKey);
     // Parse request body
     let startDate: string | undefined;
     let endDate: string | undefined;
@@ -450,7 +335,7 @@ Deno.serve(async (req) => {
 
     const now = new Date();
     const defaultEnd = now.toISOString().split("T")[0];
-    const defaultStart = new Date(now.getTime() - 7 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
+    const defaultStart = new Date(now.getTime() - 30 * 24 * 60 * 60 * 1000).toISOString().split("T")[0];
     const timeRange = { since: startDate || defaultStart, until: endDate || defaultEnd };
 
     console.log(`Meta sync: ${timeRange.since} to ${timeRange.until}`);
@@ -601,10 +486,21 @@ Deno.serve(async (req) => {
     );
   } catch (err) {
     const error = err as Error;
-    console.error("Meta sync error:", error.message);
+    console.error("Meta sync error:", error);
+    if (logId) {
+      await supabase.from("webhook_logs").update({ status: "error", error_message: error.message }).eq("id", logId);
+    } else {
+      await supabase.from("webhook_logs").insert({ webhook_type: "meta_sync", status: "error", error_message: error.message });
+    }
     return new Response(
       JSON.stringify({ success: false, error: error.message }),
       { status: 400, headers: { ...corsHeaders, "Content-Type": "application/json" } }
     );
   }
 });
+
+
+
+ git remote add origin https://github.com/johnnyromack/marketing.git                                                                                                       
+  git branch -M main                                                                                                                                                          
+  git push -u origin main
