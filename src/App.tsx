@@ -11,6 +11,7 @@ import Dashboard from "./pages/Dashboard";
 import LandingPage from "./pages/LandingPage";
 import Home from "./pages/Home";
 import Auth from "./pages/Auth";
+import AuthCallback from "./pages/AuthCallback";
 import ChangePassword from "./pages/ChangePassword";
 import DataEntry from "./pages/DataEntry";
 import MidiaDataEntry from "./pages/MidiaDataEntry";
@@ -77,6 +78,7 @@ const App = () => (
               <Routes>
                 <Route path="/" element={<Auth />} />
                 <Route path="/auth" element={<Auth />} />
+                <Route path="/auth/callback" element={<AuthCallback />} />
                 <Route path="/home" element={<Home />} />
                 <Route path="/dashboard" element={<Dashboard />} />
                 <Route path="/alterar-senha" element={<ChangePassword />} />
