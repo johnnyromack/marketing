@@ -23,6 +23,16 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
+  // Show error from OAuth redirect (e.g. ?error=server_error)
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const error = params.get('error_description') || params.get('error');
+    if (error) {
+      toast({ title: 'Erro no login com Google', description: decodeURIComponent(error), variant: 'destructive' });
+      window.history.replaceState({}, '', '/');
+    }
+  }, []);
+
   // Handle OAuth implicit flow: #access_token= in URL hash
   useEffect(() => {
     const hash = window.location.hash;
@@ -100,7 +110,7 @@ const Auth = () => {
     const { error } = await supabase.auth.signInWithOAuth({
       provider: 'google',
       options: {
-        redirectTo: `${window.location.origin}/`,
+        redirectTo: `${window.location.origin}/auth/callback`,
       },
     });
     setIsGoogleLoading(false);
