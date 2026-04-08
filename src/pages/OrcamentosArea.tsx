@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useMarcasUnidadesData } from '@/hooks/useMarcasUnidadesData';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -232,8 +232,7 @@ const OrcamentosArea = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
+    <AppLayout>
       <main className="container mx-auto px-4 py-6">
         <div className="flex items-center gap-3 mb-6">
           <Wallet className="h-8 w-8 text-primary" />
@@ -457,7 +456,7 @@ const OrcamentosArea = () => {
           />
         )}
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

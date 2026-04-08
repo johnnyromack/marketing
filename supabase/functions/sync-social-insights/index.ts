@@ -1,10 +1,7 @@
 /**
  * sync-social-insights Edge Function
- *
- * Fetches social media data from Meta Graph API (Instagram + Facebook Pages)
- * and upserts mentions into social_media_mentions table.
- *
- * Triggered manually or via cron.
+ * Pulls Facebook Pages posts + Instagram media into social_media_mentions.
+ * Always returns HTTP 200 — errors are collected in the response body.
  */
 
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -14,19 +11,25 @@ const corsHeaders = {
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
 };
 
-const META_GRAPH_BASE = 'https://graph.facebook.com/v21.0';
+const META_BASE = 'https://graph.facebook.com/v21.0';
 
-async function fetchMetaApi(path: string, accessToken: string, params: Record<string, string> = {}) {
-  const url = new URL(`${META_GRAPH_BASE}${path}`);
-  url.searchParams.set('access_token', accessToken);
-  Object.entries(params).forEach(([k, v]) => url.searchParams.set(k, v));
+async function metaGet(path: string, token: string, params: Record<string, string> = {}) {
+  const url = new URL(`${META_BASE}${path}`);
+  url.searchParams.set('access_token', token);
+  for (const [k, v] of Object.entries(params)) url.searchParams.set(k, v);
 
   const res = await fetch(url.toString());
+  const json = await res.json().catch(() => ({}));
+
   if (!res.ok) {
-    const err = await res.json().catch(() => ({}));
-    throw new Error(`Meta API error: ${err.error?.message || res.status}`);
+    const msg = json?.error?.message || json?.error?.type || `HTTP ${res.status}`;
+    throw new Error(`Meta API [${path}]: ${msg}`);
   }
-  return res.json();
+  // Meta sometimes returns HTTP 200 with an error body
+  if (json?.error) {
+    throw new Error(`Meta API [${path}]: ${json.error.message || json.error.type}`);
+  }
+  return json;
 }
 
 Deno.serve(async (req) => {
@@ -34,203 +37,185 @@ Deno.serve(async (req) => {
     return new Response(null, { headers: corsHeaders });
   }
 
-  try {
-    const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-    const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+  const ok = (body: unknown) =>
+    new Response(JSON.stringify(body), {
+      status: 200,
+      headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+    });
 
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+  const supabase = createClient(
+    Deno.env.get('SUPABASE_URL') ?? '',
+    Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ?? '',
+  );
 
-    // Optionally scope to a specific user from request body
-    const body = await req.json().catch(() => ({}));
-    const targetUserId: string | null = body.user_id || null;
+  // ── 1. Parse body ────────────────────────────────────────────────────────
+  const body = await req.json().catch(() => ({}));
+  const targetUserId: string | null = body?.user_id ?? null;
 
-    // Fetch all active Meta/Instagram integrations
-    let query = supabase
-      .from('ads_integrations')
-      .select('id, user_id, platform, access_token, account_id, account_name')
-      .in('platform', ['meta', 'facebook', 'instagram'])
-      .not('access_token', 'is', null);
+  // ── 2. Load integrations ─────────────────────────────────────────────────
+  let intQuery = supabase
+    .from('ads_integrations')
+    .select('id, user_id, platform, access_token, account_id, account_name')
+    .in('platform', ['meta', 'facebook', 'instagram'])
+    .not('access_token', 'is', null);
 
-    if (targetUserId) {
-      query = query.eq('user_id', targetUserId);
+  if (targetUserId) intQuery = intQuery.eq('user_id', targetUserId);
+
+  const { data: integrations, error: intError } = await intQuery;
+
+  if (intError) {
+    console.error('Failed to load integrations:', intError.message);
+    return ok({ success: false, error: `DB error: ${intError.message}`, synced: 0 });
+  }
+
+  if (!integrations || integrations.length === 0) {
+    return ok({ success: true, message: 'Nenhuma integração Meta ativa encontrada. Configure em Integrações.', synced: 0 });
+  }
+
+  console.log(`Processing ${integrations.length} Meta integration(s)`);
+
+  let totalSynced = 0;
+  const errors: string[] = [];
+
+  // ── 3. Per-integration sync ──────────────────────────────────────────────
+  for (const integration of integrations) {
+    const { id: intId, user_id: userId, access_token: token } = integration;
+
+    // 3a. Get Facebook Pages this token has access to
+    let pages: Array<{ id: string; name: string; access_token: string }> = [];
+    try {
+      const pagesRes = await metaGet('/me/accounts', token, {
+        fields: 'id,name,access_token',
+        limit: '10',
+      });
+      pages = pagesRes?.data ?? [];
+      console.log(`Integration ${intId}: ${pages.length} page(s) found`);
+    } catch (e) {
+      const msg = (e as Error).message;
+      console.error(`Integration ${intId} /me/accounts failed:`, msg);
+      errors.push(`[${intId}] pages: ${msg}`);
+      continue; // skip to next integration
     }
 
-    const { data: integrations, error: integrationsError } = await query;
+    // 3b. For each page: posts + instagram
+    for (const page of pages) {
+      const pageToken = page.access_token || token;
 
-    if (integrationsError) {
-      throw new Error(`Failed to fetch integrations: ${integrationsError.message}`);
-    }
-
-    if (!integrations || integrations.length === 0) {
-      return new Response(
-        JSON.stringify({ success: true, message: 'No active Meta integrations found', synced: 0 }),
-        { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-      );
-    }
-
-    let totalSynced = 0;
-    const errors: string[] = [];
-
-    for (const integration of integrations) {
+      // Facebook posts
       try {
-        const accessToken = integration.access_token;
-        const userId = integration.user_id;
-
-        // 1. Fetch connected Facebook Pages
-        const pagesData = await fetchMetaApi('/me/accounts', accessToken, {
-          fields: 'id,name,access_token',
-          limit: '10',
+        const postsRes = await metaGet(`/${page.id}/posts`, pageToken, {
+          fields: 'id,message,story,created_time,likes.summary(true),comments.summary(true),shares',
+          limit: '25',
         });
+        const posts = postsRes?.data ?? [];
 
-        const pages: Array<{ id: string; name: string; access_token: string }> = pagesData.data || [];
+        const rows = posts
+          .map((p: Record<string, unknown>) => ({
+            user_id: userId,
+            platform: 'facebook',
+            external_id: String(p.id),
+            external_url: `https://facebook.com/${p.id}`,
+            content: String((p.message ?? p.story) ?? ''),
+            content_type: 'post',
+            author: { id: page.id, username: page.name, display_name: page.name },
+            sentiment: 'neutral',
+            sentiment_score: 0,
+            sentiment_confidence: 0,
+            intent: 'neutral',
+            topics: [],
+            engagement: {
+              likes: (p.likes as { summary?: { total_count?: number } })?.summary?.total_count ?? 0,
+              comments: (p.comments as { summary?: { total_count?: number } })?.summary?.total_count ?? 0,
+              shares: (p.shares as { count?: number })?.count ?? 0,
+            },
+            published_at: p.created_time as string,
+            fetched_at: new Date().toISOString(),
+          }))
+          .filter((r: { content: string }) => r.content.length > 0);
 
-        for (const page of pages) {
-          const pageToken = page.access_token;
+        if (rows.length > 0) {
+          const { error: uErr } = await supabase
+            .from('social_media_mentions')
+            .upsert(rows, { onConflict: 'user_id,platform,external_id', ignoreDuplicates: false });
 
-          // 2. Fetch recent page posts
-          try {
-            const postsData = await fetchMetaApi(`/${page.id}/posts`, pageToken, {
-              fields: 'id,message,story,created_time,likes.summary(true),comments.summary(true),shares',
-              limit: '25',
-            });
-
-            const posts = postsData.data || [];
-
-            const mentions = posts.map((post: Record<string, unknown>) => ({
-              user_id: userId,
-              platform: 'facebook',
-              external_id: post.id as string,
-              external_url: `https://facebook.com/${post.id}`,
-              content: (post.message as string) || (post.story as string) || '',
-              content_type: 'post',
-              author: {
-                id: page.id,
-                platform: 'facebook',
-                username: page.name,
-                display_name: page.name,
-              },
-              sentiment: 'neutral',
-              sentiment_score: 0,
-              sentiment_confidence: 0,
-              intent: 'neutral',
-              topics: [],
-              engagement: {
-                likes: (post.likes as { summary?: { total_count?: number } })?.summary?.total_count || 0,
-                comments: (post.comments as { summary?: { total_count?: number } })?.summary?.total_count || 0,
-                shares: (post.shares as { count?: number })?.count || 0,
-              },
-              published_at: post.created_time as string,
-              fetched_at: new Date().toISOString(),
-            })).filter((m: { content: string }) => m.content.length > 0);
-
-            if (mentions.length > 0) {
-              const { error: upsertError } = await supabase
-                .from('social_media_mentions')
-                .upsert(mentions, {
-                  onConflict: 'user_id,platform,external_id',
-                  ignoreDuplicates: false,
-                });
-
-              if (upsertError) {
-                errors.push(`Page ${page.name}: ${upsertError.message}`);
-              } else {
-                totalSynced += mentions.length;
-              }
-            }
-          } catch (postErr) {
-            errors.push(`Failed to fetch posts for page ${page.name}: ${(postErr as Error).message}`);
-          }
-
-          // 3. Fetch Instagram Business Account linked to this page
-          try {
-            const igData = await fetchMetaApi(`/${page.id}`, pageToken, {
-              fields: 'instagram_business_account',
-            });
-
-            const igAccountId = igData.instagram_business_account?.id;
-
-            if (igAccountId) {
-              const igMediaData = await fetchMetaApi(`/${igAccountId}/media`, pageToken, {
-                fields: 'id,caption,media_type,timestamp,like_count,comments_count,permalink',
-                limit: '25',
-              });
-
-              const igPosts = igMediaData.data || [];
-
-              const igMentions = igPosts.map((post: Record<string, unknown>) => ({
-                user_id: userId,
-                platform: 'instagram',
-                external_id: post.id as string,
-                external_url: post.permalink as string || null,
-                content: (post.caption as string) || '',
-                content_type: 'post',
-                author: {
-                  id: igAccountId,
-                  platform: 'instagram',
-                  username: page.name,
-                  display_name: page.name,
-                },
-                sentiment: 'neutral',
-                sentiment_score: 0,
-                sentiment_confidence: 0,
-                intent: 'neutral',
-                topics: [],
-                engagement: {
-                  likes: (post.like_count as number) || 0,
-                  comments: (post.comments_count as number) || 0,
-                  shares: 0,
-                },
-                published_at: post.timestamp as string,
-                fetched_at: new Date().toISOString(),
-              })).filter((m: { content: string }) => m.content.length > 0);
-
-              if (igMentions.length > 0) {
-                const { error: igUpsertError } = await supabase
-                  .from('social_media_mentions')
-                  .upsert(igMentions, {
-                    onConflict: 'user_id,platform,external_id',
-                    ignoreDuplicates: false,
-                  });
-
-                if (igUpsertError) {
-                  errors.push(`Instagram ${igAccountId}: ${igUpsertError.message}`);
-                } else {
-                  totalSynced += igMentions.length;
-                }
-              }
-            }
-          } catch (igErr) {
-            // Instagram not connected to this page — skip silently
-            console.log(`No Instagram for page ${page.name}: ${(igErr as Error).message}`);
+          if (uErr) {
+            errors.push(`[${page.name}] fb upsert: ${uErr.message}`);
+          } else {
+            totalSynced += rows.length;
+            console.log(`Upserted ${rows.length} FB posts from page ${page.name}`);
           }
         }
+      } catch (e) {
+        errors.push(`[${page.name}] fb posts: ${(e as Error).message}`);
+      }
 
-        // Update last_sync_at on the integration
-        await supabase
-          .from('ads_integrations')
-          .update({ last_sync_at: new Date().toISOString() })
-          .eq('id', integration.id);
+      // Instagram Business Account
+      try {
+        const igPageRes = await metaGet(`/${page.id}`, pageToken, {
+          fields: 'instagram_business_account',
+        });
+        const igId = igPageRes?.instagram_business_account?.id;
+        if (!igId) continue;
 
-      } catch (integrationErr) {
-        errors.push(`Integration ${integration.id}: ${(integrationErr as Error).message}`);
+        const igRes = await metaGet(`/${igId}/media`, pageToken, {
+          fields: 'id,caption,media_type,timestamp,like_count,comments_count,permalink',
+          limit: '25',
+        });
+        const igPosts = igRes?.data ?? [];
+
+        const igRows = igPosts
+          .map((p: Record<string, unknown>) => ({
+            user_id: userId,
+            platform: 'instagram',
+            external_id: String(p.id),
+            external_url: (p.permalink as string) ?? null,
+            content: String((p.caption) ?? ''),
+            content_type: 'post',
+            author: { id: igId, username: page.name, display_name: page.name },
+            sentiment: 'neutral',
+            sentiment_score: 0,
+            sentiment_confidence: 0,
+            intent: 'neutral',
+            topics: [],
+            engagement: {
+              likes: (p.like_count as number) ?? 0,
+              comments: (p.comments_count as number) ?? 0,
+              shares: 0,
+            },
+            published_at: p.timestamp as string,
+            fetched_at: new Date().toISOString(),
+          }))
+          .filter((r: { content: string }) => r.content.length > 0);
+
+        if (igRows.length > 0) {
+          const { error: uErr } = await supabase
+            .from('social_media_mentions')
+            .upsert(igRows, { onConflict: 'user_id,platform,external_id', ignoreDuplicates: false });
+
+          if (uErr) {
+            errors.push(`[${page.name}] ig upsert: ${uErr.message}`);
+          } else {
+            totalSynced += igRows.length;
+            console.log(`Upserted ${igRows.length} IG posts from ${page.name}`);
+          }
+        }
+      } catch (e) {
+        // Instagram not connected to this page — log and continue
+        console.log(`[${page.name}] instagram skipped: ${(e as Error).message}`);
       }
     }
 
-    return new Response(
-      JSON.stringify({
-        success: true,
-        synced: totalSynced,
-        integrations_processed: integrations.length,
-        errors: errors.length > 0 ? errors : undefined,
-      }),
-      { status: 200, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
-
-  } catch (error) {
-    console.error('Error in sync-social-insights:', error);
-    return new Response(
-      JSON.stringify({ error: (error as Error).message || 'Internal server error' }),
-      { status: 500, headers: { ...corsHeaders, 'Content-Type': 'application/json' } }
-    );
+    // Update last_sync_at
+    await supabase
+      .from('ads_integrations')
+      .update({ last_sync_at: new Date().toISOString() })
+      .eq('id', intId);
   }
+
+  return ok({
+    success: true,
+    synced: totalSynced,
+    integrations_processed: integrations.length,
+    ...(errors.length > 0 ? { errors } : {}),
+  });
 });

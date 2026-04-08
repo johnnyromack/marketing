@@ -91,6 +91,8 @@ const SOCIAL_PLATFORMS = [
   'youtube',
   'google_business',
   'facebook',
+  'meta',   // Meta OAuth covers Facebook + Instagram
+  'google', // Google OAuth covers Google Business
 ];
 
 const defaultStats: HubStats = {

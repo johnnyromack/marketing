@@ -182,7 +182,7 @@ function SidebarBody({
     { to: '/social/automations', label: 'Automações',        icon: <Zap className="h-4 w-4" /> },
     { to: '/social/crisis',      label: 'Crise',             icon: <AlertTriangle className="h-4 w-4" /> },
     { to: '/social/competitive', label: 'Competitivo',       icon: <Target className="h-4 w-4" /> },
-    { to: '/social/connectors',  label: 'Conectores',        icon: <Plug className="h-4 w-4" /> },
+
     { to: '/social/queries',     label: 'Queries',           icon: <Search className="h-4 w-4" /> },
     { to: '/social/topics',      label: 'Tópicos',           icon: <Tag className="h-4 w-4" /> },
     { to: '/social/sources',     label: 'Fontes',            icon: <Rss className="h-4 w-4" /> },
@@ -193,33 +193,28 @@ function SidebarBody({
     { to: '/social/settings',    label: 'Configurações',     icon: <Settings className="h-4 w-4" /> },
   ];
 
-  // ── Fixed bottom groups ───────────────────────────────────────────────────
+  // ── Tab 5 — Configurações ────────────────────────────────────────────────
 
-  const configGroups = [
-    {
-      key: 'config', label: 'Configurações', icon: <Settings className="h-4 w-4" />, show: hasAdminAccess,
-      items: [
-        ...(hasAdminAccess ? [{ to: '/admin/usuarios', label: 'Usuários', icon: <Users className="h-4 w-4" /> }] : []),
-        ...(canEditForms ? [
-          { to: '/admin/marcas-unidades', label: 'Marcas e Unidades',  icon: <Building2 className="h-4 w-4" /> },
-          { to: '/admin/fornecedores',    label: 'Fornecedores',        icon: <Building2 className="h-4 w-4" /> },
-          { to: '/integracoes',           label: 'Integrações',         icon: <Link2 className="h-4 w-4" /> },
-          { to: '/credenciais',           label: 'Credenciais & IA',    icon: <Key className="h-4 w-4" /> },
-          { to: '/admin/alertas',         label: 'Alertas & WhatsApp',  icon: <Bell className="h-4 w-4" /> },
-        ] : []),
-        ...(canViewLogs ? [
-          { to: '/logs',      label: 'Logs Atividade',     icon: <History className="h-4 w-4" /> },
-          { to: '/logs/sync', label: 'Logs Sincronização', icon: <RefreshCw className="h-4 w-4" /> },
-        ] : []),
-      ],
-    },
-    {
-      key: 'ferramentas', label: 'Ferramentas', icon: <Wrench className="h-4 w-4" />, show: canEditForms,
-      items: [
-        { to: '/ferramentas/simulador-conversao', label: 'Simulador de Conversão', icon: <LineChart className="h-4 w-4" /> },
-        { to: '/documentacao',                    label: 'Documentação',            icon: <BookOpen className="h-4 w-4" /> },
-      ],
-    },
+  const configLinks = [
+    ...(hasAdminAccess ? [{ to: '/admin/usuarios',        label: 'Usuários',           icon: <Users className="h-4 w-4" /> }] : []),
+    ...(canEditForms   ? [
+      { to: '/admin/marcas-unidades', label: 'Marcas e Unidades', icon: <Building2 className="h-4 w-4" /> },
+      { to: '/admin/fornecedores',    label: 'Fornecedores',       icon: <Building2 className="h-4 w-4" /> },
+      { to: '/integracoes',           label: 'Integrações',        icon: <Link2 className="h-4 w-4" /> },
+      { to: '/credenciais',           label: 'Credenciais & IA',   icon: <Key className="h-4 w-4" /> },
+      { to: '/admin/alertas',         label: 'Alertas & WhatsApp', icon: <Bell className="h-4 w-4" /> },
+    ] : []),
+    ...(canViewLogs ? [
+      { to: '/logs',      label: 'Logs Atividade',     icon: <History className="h-4 w-4" /> },
+      { to: '/logs/sync', label: 'Logs Sincronização', icon: <RefreshCw className="h-4 w-4" /> },
+    ] : []),
+  ];
+
+  // ── Tab 6 — Ferramentas ──────────────────────────────────────────────────
+
+  const ferramentasLinks = [
+    { to: '/ferramentas/simulador-conversao', label: 'Simulador de Conversão', icon: <LineChart className="h-4 w-4" /> },
+    { to: '/documentacao',                    label: 'Documentação',            icon: <BookOpen className="h-4 w-4" /> },
   ];
 
   return (
@@ -283,19 +278,23 @@ function SidebarBody({
             <SidebarLink key={l.to} to={l.to} icon={l.icon} label={l.label} collapsed={collapsed} />
           ))}
 
+          {/* Tab 5 — Configurações */}
+          {activeTab === 'configuracoes' && configLinks.map(l => (
+            <SidebarLink key={l.to} to={l.to} icon={l.icon} label={l.label} collapsed={collapsed} />
+          ))}
+
+          {/* Tab 6 — Ferramentas */}
+          {activeTab === 'ferramentas' && ferramentasLinks.map(l => (
+            <SidebarLink key={l.to} to={l.to} icon={l.icon} label={l.label} collapsed={collapsed} />
+          ))}
+
         </nav>
 
-        {/* ── Fixed bottom: Aprovações + Config + Ferramentas + Ajuda ── */}
+        {/* ── Fixed bottom: Aprovações + Ajuda ── */}
         <div className="border-t border-border px-2 py-2 space-y-0.5">
           {canApprove && (
             <SidebarLink to="/gestor/aprovacao" icon={<CheckSquare className="h-4 w-4" />} label="Aprovações" collapsed={collapsed} />
           )}
-          {configGroups.filter(g => g.show).map(g => (
-            <SidebarGroup
-              key={g.key} groupKey={g.key} label={g.label} icon={g.icon}
-              items={g.items} collapsed={collapsed} openGroups={openGroups} toggle={toggle}
-            />
-          ))}
           <SidebarLink to="/ajuda" icon={<HelpCircle className="h-4 w-4" />} label="Ajuda" collapsed={collapsed} />
         </div>
 

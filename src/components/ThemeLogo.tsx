@@ -1,7 +1,7 @@
 import { useTheme } from 'next-themes';
 import { useEffect, useState, forwardRef } from 'react';
-import RomackLogoBranco from '@/assets/RomackVision_branco.png';
-import RomackLogoColorido from '@/assets/RomackVision.png';
+import RomackLogoBranco from '@/assets/Mkt Vision_branco.png';
+import RomackLogoColorido from '@/assets/Mkt Vision.png';
 
 interface ThemeLogoProps {
   className?: string;

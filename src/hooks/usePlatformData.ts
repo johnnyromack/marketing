@@ -45,7 +45,7 @@ interface Marca {
   nome: string;
   display_name: string | null;
   logo_url: string | null;
-  is_active: boolean;
+  ativo: boolean;
   manual_balance: number | null;
   daily_budget: number | null;
   last_balance_update: string | null;
@@ -205,7 +205,7 @@ export function useBrands(includeInactive = false) {
         .order("nome", { ascending: true });
 
       if (!includeInactive) {
-        query = query.eq("is_active", true);
+        query = query.eq("ativo", true);
       }
 
       const { data, error } = await query;

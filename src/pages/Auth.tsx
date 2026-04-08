@@ -48,18 +48,10 @@ const Auth = () => {
     }
   }, []);
 
+
   useEffect(() => {
     const checkPasswordStatus = async () => {
       if (!user) return;
-
-      // Skip password check for Google OAuth users — they don't have temporary passwords
-      const isGoogleUser = user.app_metadata?.provider === 'google' ||
-                           user.app_metadata?.providers?.includes('google');
-
-      if (isGoogleUser) {
-        navigate('/home');
-        return;
-      }
 
       const { data, error } = await supabase
         .from('user_roles')
@@ -67,13 +59,12 @@ const Auth = () => {
         .eq('user_id', user.id)
         .maybeSingle();
 
-      if (error) {
-        console.error('Error checking password status:', error);
+      if (error || !data) {
         navigate('/home');
         return;
       }
 
-      if (data?.must_change_password) {
+      if (data.must_change_password) {
         navigate('/alterar-senha');
       } else {
         navigate('/home');
@@ -241,10 +232,6 @@ const Auth = () => {
             </div>
           </div>
           
-          {/* RomackVision logo */}
-          <div className="flex justify-center">
-            <ThemeLogo className="h-8 w-auto opacity-60" alt="Powered by RomackVision" />
-          </div>
         </CardContent>
       </Card>
     </div>

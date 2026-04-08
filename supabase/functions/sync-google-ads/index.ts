@@ -423,6 +423,9 @@ async function fetchAds(
       ad_group_ad.ad.type,
       ad_group_ad.ad.final_urls,
       ad_group_ad.status,
+      ad_group.id,
+      ad_group.name,
+      ad_group.status,
       campaign.id,
       metrics.impressions,
       metrics.clicks,
@@ -783,6 +786,7 @@ Deno.serve(async (req) => {
             let adsSynced = 0;
             for (const adResult of ads) {
               const ad = adResult.adGroupAd?.ad || adResult.ad_group_ad?.ad;
+              const adGroup = adResult.adGroup || adResult.ad_group;
               const campaignExternalId = String(adResult.campaign?.id || "");
               const campaignDbId = campaignIdMap.get(campaignExternalId);
               if (!ad?.id || !campaignDbId) continue;
@@ -792,6 +796,8 @@ Deno.serve(async (req) => {
                 ad_external_id: String(ad.id),
                 name: ad.name || `Ad ${ad.id}`,
                 status: adResult.adGroupAd?.status || adResult.ad_group_ad?.status || "UNKNOWN",
+                ad_group_status: adGroup?.status || null,
+                ad_group_external_id: adGroup?.id ? String(adGroup.id) : null,
                 type: ad.type || ad.adType || null,
                 final_url: ad.finalUrls?.[0] || ad.final_urls?.[0] || null,
               }, { onConflict: "campaign_id,ad_external_id" });

@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
@@ -213,9 +213,7 @@ const Orcamentos = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
-
+    <AppLayout>
       <main className="container mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-6">Cadastro de Orçamentos de Mídia</h1>
         
@@ -507,7 +505,7 @@ const Orcamentos = () => {
         onOpenChange={setVisualizarDialogOpen}
         campanhaId={selectedCampanhaId}
       />
-    </div>
+    </AppLayout>
   );
 };
 

@@ -83,7 +83,7 @@ const Index = () => {
       {/* Footer */}
       <footer className="border-t border-border py-4 mt-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          Romack Vision • Dados consolidados Jul-Nov 2025
+          Mkt Vision • Dados consolidados Jul-Nov 2025
         </div>
       </footer>
     </div>

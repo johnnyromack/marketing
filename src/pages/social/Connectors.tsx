@@ -13,6 +13,9 @@ import {
   Loader2,
   Link2,
   Trash2,
+  KeyRound,
+  Plug,
+  ExternalLink,
 } from 'lucide-react';
 import { PlatformIcon, PLATFORM_CONFIG } from '@/components/social-media';
 import type {
@@ -448,6 +451,37 @@ export default function ConnectorsPage() {
             {notification.message}
           </div>
         )}
+
+        {/* ── Credenciais / Integrações quick-access banner ── */}
+        <div className="mb-5 flex flex-col sm:flex-row gap-3">
+          <button
+            onClick={() => navigate('/credenciais')}
+            className="flex flex-1 items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50"
+          >
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-primary/10">
+              <KeyRound className="h-4 w-4 text-primary" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground">Credenciais de API</p>
+              <p className="text-xs text-muted-foreground">Configure tokens e chaves de acesso das plataformas</p>
+            </div>
+            <ExternalLink className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+          </button>
+
+          <button
+            onClick={() => navigate('/integracoes')}
+            className="flex flex-1 items-center gap-3 rounded-lg border border-border bg-card p-4 text-left transition-colors hover:bg-muted/50"
+          >
+            <div className="flex h-9 w-9 flex-shrink-0 items-center justify-center rounded-md bg-violet-500/10">
+              <Plug className="h-4 w-4 text-violet-500" />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-sm font-medium text-foreground">Integrações</p>
+              <p className="text-xs text-muted-foreground">Gerencie contas conectadas de Meta, Google e TikTok</p>
+            </div>
+            <ExternalLink className="h-4 w-4 flex-shrink-0 text-muted-foreground" />
+          </button>
+        </div>
 
         {/* Header */}
         <div

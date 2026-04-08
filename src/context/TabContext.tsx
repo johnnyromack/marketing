@@ -1,7 +1,7 @@
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { useLocation } from 'react-router-dom';
 
-export type TabId = 'midia' | 'ads' | 'orcamentario' | 'social';
+export type TabId = 'midia' | 'ads' | 'orcamentario' | 'social' | 'configuracoes' | 'ferramentas';
 
 export interface Tab {
   id: TabId;
@@ -9,10 +9,12 @@ export interface Tab {
 }
 
 export const TABS: Tab[] = [
-  { id: 'midia',        label: 'Mídia e Performance'     },
-  { id: 'ads',          label: 'Ads Insights'             },
-  { id: 'orcamentario', label: 'Controle Orçamentário'    },
-  { id: 'social',       label: 'Social Monitor'           },
+  { id: 'midia',          label: 'Mídia e Performance'     },
+  { id: 'ads',            label: 'Ads Insights'             },
+  { id: 'orcamentario',   label: 'Controle Orçamentário'    },
+  { id: 'social',         label: 'Social Monitor'           },
+  { id: 'configuracoes',  label: 'Configurações'            },
+  { id: 'ferramentas',    label: 'Ferramentas'              },
 ];
 
 function detectTab(pathname: string): TabId {
@@ -23,6 +25,12 @@ function detectTab(pathname: string): TabId {
   if (pathname.startsWith('/plataformas') ||
       pathname.startsWith('/saldos')       ||
       pathname.startsWith('/relatorios'))                         return 'ads';
+  if (pathname.startsWith('/ferramentas') ||
+      pathname.startsWith('/documentacao'))                       return 'ferramentas';
+  if (pathname.startsWith('/admin') ||
+      pathname.startsWith('/integracoes') ||
+      pathname.startsWith('/credenciais') ||
+      pathname.startsWith('/logs'))                               return 'configuracoes';
   return 'midia';
 }
 

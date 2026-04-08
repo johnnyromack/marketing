@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.168.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2";
 
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
@@ -13,7 +14,22 @@ serve(async (req) => {
   try {
     const { query, type } = await req.json();
 
-    const MAPBOX_TOKEN = Deno.env.get('MAPBOX_PUBLIC_TOKEN');
+    // Read token from api_configurations table first, fallback to env var
+    let MAPBOX_TOKEN = Deno.env.get('MAPBOX_PUBLIC_TOKEN');
+    try {
+      const supabase = createClient(
+        Deno.env.get('SUPABASE_URL')!,
+        Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+      );
+      const { data } = await supabase
+        .from('api_configurations')
+        .select('config_value')
+        .eq('config_key', 'MAPBOX_PUBLIC_TOKEN')
+        .eq('is_configured', true)
+        .single();
+      if (data?.config_value) MAPBOX_TOKEN = data.config_value;
+    } catch { /* use env var fallback */ }
+
     if (!MAPBOX_TOKEN) {
       console.error('MAPBOX_PUBLIC_TOKEN not configured');
       return new Response(

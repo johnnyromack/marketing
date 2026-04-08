@@ -9,6 +9,7 @@ import { useState, useEffect } from "react";
 import { toast } from "sonner";
 import { supabase } from "@/integrations/supabase/client";
 import { MetaIcon, GoogleAdsIcon, TikTokIcon } from "@/components/icons/PlatformIcons";
+import { Map, Linkedin } from "lucide-react";
 import { Link } from "react-router-dom";
 import AIProviderSettings from "@/components/settings/AIProviderSettings";
 
@@ -96,6 +97,21 @@ const platformConfigs: PlatformCredentials[] = [
     ],
   },
   {
+    platform: "mapbox",
+    name: "Mapbox (Mapas)",
+    icon: <Map size={24} />,
+    color: "bg-emerald-500/10 text-emerald-600 dark:text-emerald-400",
+    docLink: "/documentacao#mapbox",
+    fields: [
+      {
+        key: "MAPBOX_PUBLIC_TOKEN",
+        label: "Public Token",
+        placeholder: "pk.eyJ1Ijoi...",
+        description: "Token público do Mapbox — usado nos mapas de mídia off. Obtenha em account.mapbox.com",
+      },
+    ],
+  },
+  {
     platform: "tiktok",
     name: "TikTok Ads",
     icon: <TikTokIcon size={24} />,
@@ -125,6 +141,42 @@ const platformConfigs: PlatformCredentials[] = [
         label: "Advertiser ID",
         placeholder: "7xxxxxxxxxxxxxxxxx",
         description: "ID do anunciante TikTok (19 digitos)",
+      },
+    ],
+  },
+  {
+    platform: "linkedin",
+    name: "LinkedIn",
+    icon: <Linkedin size={24} />,
+    color: "bg-sky-500/10 text-sky-600 dark:text-sky-400",
+    docLink: "/documentacao#linkedin",
+    fields: [
+      {
+        key: "LINKEDIN_CLIENT_ID",
+        label: "Client ID",
+        placeholder: "86xxxxxxxxxx",
+        description: "Client ID do aplicativo LinkedIn Developer (em Products > Marketing Developer Platform)",
+      },
+      {
+        key: "LINKEDIN_CLIENT_SECRET",
+        label: "Client Secret",
+        placeholder: "xxxxxxxxxxxxxxxx",
+        description: "Client Secret do aplicativo LinkedIn Developer",
+      },
+    ],
+  },
+  {
+    platform: "google_business",
+    name: "Google Business Profile",
+    icon: <GoogleAdsIcon size={24} />,
+    color: "bg-orange-500/10 text-orange-600 dark:text-orange-400",
+    docLink: "/documentacao#google",
+    fields: [
+      {
+        key: "GOOGLE_BUSINESS_ACCOUNT_ID",
+        label: "Account ID",
+        placeholder: "accounts/123456789",
+        description: "ID da conta Google Business Profile (formato: accounts/XXXXXXXXX)",
       },
     ],
   },

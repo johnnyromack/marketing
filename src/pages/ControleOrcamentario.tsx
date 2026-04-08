@@ -6,7 +6,7 @@ import { useControleOrcamentario, ControleFormData } from '@/hooks/useControleOr
 import { useMarcasUnidadesData } from '@/hooks/useMarcasUnidadesData';
 import { useFornecedores } from '@/hooks/useFornecedores';
 import { useActivityLog } from '@/hooks/useActivityLog';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Loader2, LayoutDashboard, List, PlusCircle } from 'lucide-react';
@@ -176,18 +176,16 @@ const ControleOrcamentario = () => {
 
   if (isLoading) {
     return (
-      <div className="min-h-screen flex flex-col">
-        <AppHeader />
+      <AppLayout>
         <div className="flex-1 flex items-center justify-center">
           <Loader2 className="h-8 w-8 animate-spin text-primary" />
         </div>
-      </div>
+      </AppLayout>
     );
   }
 
   return (
-    <div className="min-h-screen flex flex-col bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
+    <AppLayout>
       <main className="flex-1 container py-6 space-y-6">
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
@@ -272,7 +270,7 @@ const ControleOrcamentario = () => {
 
         </Tabs>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

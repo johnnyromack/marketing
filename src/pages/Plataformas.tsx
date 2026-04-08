@@ -191,7 +191,7 @@ const Plataformas = () => {
 
   const brandBudgetData = useMemo(() => {
     const relevantBrands = selectedBrand === "all"
-      ? brands.filter(b => b.is_active && ((b.manual_balance || 0) > 0 || (b.daily_budget || 0) > 0))
+      ? brands.filter(b => b.ativo && ((b.manual_balance || 0) > 0 || (b.daily_budget || 0) > 0))
       : brands.filter(b => b.id === selectedBrand);
     return relevantBrands.map(brand => {
       const brandCampaigns = campaigns.filter(c => c.marca_id === brand.id);

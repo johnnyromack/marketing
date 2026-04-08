@@ -463,7 +463,7 @@ const LandingPage = () => {
                         <div className="w-3 h-3 rounded-full bg-yellow-500" />
                         <div className="w-3 h-3 rounded-full bg-green-500" />
                       </div>
-                      <span className="text-xs text-muted-foreground ml-2">Romack Vision Dashboard</span>
+                      <span className="text-xs text-muted-foreground ml-2">Mkt Vision Dashboard</span>
                     </div>
                     <div className="p-6 space-y-4">
                       <div className="grid grid-cols-3 gap-3">
@@ -564,7 +564,7 @@ const LandingPage = () => {
               A Solução Completa
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Romack Vision centraliza tudo que você precisa para gerenciar sua verba de marketing 
+              Mkt Vision centraliza tudo que você precisa para gerenciar sua verba de marketing 
               com inteligência e eficiência.
             </p>
           </div>
@@ -645,7 +645,7 @@ const LandingPage = () => {
           <div className="text-center mb-16">
             <h2 className="comparison-header text-4xl md:text-5xl font-bold mb-6">
               Por que Escolher{" "}
-              <span className="gradient-brand-text">Romack Vision</span>?
+              <span className="gradient-brand-text">Mkt Vision</span>?
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
               Veja como nos comparamos às alternativas tradicionais
@@ -656,7 +656,7 @@ const LandingPage = () => {
             <CardContent className="p-0">
               <div className="grid grid-cols-4 bg-muted/50 p-4 font-semibold text-center comparison-header">
                 <div className="text-left pl-4">Recurso</div>
-                <div className="gradient-brand-text">Romack Vision</div>
+                <div className="gradient-brand-text">Mkt Vision</div>
                 <div className="text-muted-foreground">Planilhas</div>
                 <div className="text-muted-foreground">ERPs Tradicionais</div>
               </div>
@@ -713,7 +713,7 @@ const LandingPage = () => {
               Resultados Comprovados
             </h2>
             <p className="text-xl text-muted-foreground max-w-2xl mx-auto">
-              Empresas que usam Romack Vision alcançam resultados impressionantes
+              Empresas que usam Mkt Vision alcançam resultados impressionantes
             </p>
           </div>
 
@@ -922,7 +922,7 @@ const LandingPage = () => {
             </div>
           </div>
           <div className="pt-8 border-t border-border text-center text-sm text-muted-foreground">
-            <p>© {new Date().getFullYear()} Romack Vision. Todos os direitos reservados.</p>
+            <p>© {new Date().getFullYear()} Mkt Vision. Todos os direitos reservados.</p>
           </div>
         </div>
       </footer>

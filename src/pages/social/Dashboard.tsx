@@ -1,9 +1,12 @@
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { AppLayout } from '@/components/AppLayout';
 import { PageHeader } from '@/components/layout';
 import { useAuth } from '@/hooks/useAuth';
 import { useSocialMediaHub } from '@/hooks/social-media/useSocialMediaHub';
-import { RefreshCw, Settings } from 'lucide-react';
+import { supabase } from '@/integrations/supabase/client';
+import { RefreshCw, Settings, Download } from 'lucide-react';
+import { toast } from 'sonner';
 import {
   QuickActions,
   StatsCards,
@@ -25,6 +28,46 @@ export default function SocialMediaPage() {
   const { stats, connectors, recentMentions, alerts, topics, isLoading, refresh } =
     useSocialMediaHub({ businessUnitId: businessUnitId || null });
 
+  const [syncing, setSyncing] = useState(false);
+
+  const handleSync = async () => {
+    setSyncing(true);
+    try {
+      const { data, error } = await supabase.functions.invoke('sync-social-insights', { body: {} });
+
+      // Capture real error body (Supabase wraps non-2xx as FunctionsFetchError)
+      if (error) {
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        const ctx = (error as any).context;
+        let detail = error.message;
+        try {
+          const body = ctx?.body ? await (ctx.body as Response).text?.() : null;
+          if (body) detail = body;
+        } catch { /* ignore */ }
+        throw new Error(detail);
+      }
+
+      if (data?.error) throw new Error(data.error);
+
+      const count = data?.synced ?? 0;
+      if (count === 0 && data?.message) {
+        toast.warning(data.message);
+      } else {
+        toast.success(`Sincronização concluída — ${count} publicações importadas`);
+      }
+      if (data?.errors?.length) {
+        console.warn('Sync partial errors:', data.errors);
+      }
+      refresh();
+    } catch (err) {
+      const msg = err instanceof Error ? err.message : String(err);
+      console.error('Social sync error:', msg);
+      toast.error(`Erro: ${msg}`);
+    } finally {
+      setSyncing(false);
+    }
+  };
+
   return (
     <AppLayout>
       <div className="flex-1 overflow-y-auto p-6">
@@ -42,6 +85,15 @@ export default function SocialMediaPage() {
             >
               <Settings className="h-4 w-4" />
               <span className="hidden sm:inline">Configurações</span>
+            </button>
+            <button
+              onClick={handleSync}
+              disabled={syncing || isLoading}
+              className="flex items-center gap-[var(--qi-spacing-xs)] rounded-[var(--qi-radius-md)] bg-primary px-[var(--qi-spacing-md)] py-[var(--qi-spacing-sm)] text-[var(--qi-font-size-body-sm)] text-primary-foreground transition-colors hover:opacity-90 disabled:opacity-50"
+              title="Buscar novas publicações das plataformas conectadas"
+            >
+              <Download className={`h-4 w-4 ${syncing ? 'animate-bounce' : ''}`} />
+              {syncing ? 'Sincronizando...' : 'Sincronizar'}
             </button>
             <button
               onClick={refresh}

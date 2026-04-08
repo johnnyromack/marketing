@@ -14,7 +14,7 @@ import {
   DashboardTable,
   EventsSection,
 } from '@/components/dashboard';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Users, DollarSign, Target, TrendingUp, PiggyBank, Plus, Loader2, Table2, BarChart3, GraduationCap, Calendar } from 'lucide-react';
@@ -97,9 +97,7 @@ const Dashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
-      
+    <AppLayout>
       {/* Sub-header with filters */}
       <div className="border-b border-border bg-muted/30">
         <div className="container mx-auto px-4 py-3">
@@ -222,10 +220,10 @@ const Dashboard = () => {
       {/* Footer */}
       <footer className="border-t border-border py-4 mt-8">
         <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          Romack Vision • {user?.email}
+          {user?.email}
         </div>
       </footer>
-    </div>
+    </AppLayout>
   );
 };
 

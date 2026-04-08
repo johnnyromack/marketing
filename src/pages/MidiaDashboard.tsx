@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useMidiaData, DateRange } from '@/hooks/useMidiaData';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2, Plus, LayoutDashboard, Monitor, Radio, Calendar, Gift } from 'lucide-react';
@@ -72,9 +72,7 @@ const MidiaDashboard = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
-
+    <AppLayout>
       {/* Sub-header with filters */}
       <div className="border-b border-border bg-muted/30">
         <div className="container mx-auto px-4 py-3">
@@ -213,12 +211,7 @@ const MidiaDashboard = () => {
         />
       )}
 
-      <footer className="border-t border-border py-4 mt-8">
-        <div className="container mx-auto px-4 text-center text-sm text-muted-foreground">
-          Dashboard de Mídia • {user?.email}
-        </div>
-      </footer>
-    </div>
+    </AppLayout>
   );
 };
 

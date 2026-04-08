@@ -14,13 +14,13 @@ interface Slide {
 }
 
 const slides: Slide[] = [
-  { id: 1, title: "Romack Vision", subtitle: "A Plataforma que Elimina o Desperdício Bilionário em Marketing", icon: Target, bullets: ["Plataforma SaaS que centraliza e governa toda a verba de marketing", "Visão 360° instantânea de todos os investimentos", "Gestão multi-marca unificada em um só lugar", "O mercado de gestão de marketing é fragmentado. Quem resolver isso primeiro, domina."] },
+  { id: 1, title: "Mkt Vision", subtitle: "A Plataforma que Elimina o Desperdício Bilionário em Marketing", icon: Target, bullets: ["Plataforma SaaS que centraliza e governa toda a verba de marketing", "Visão 360° instantânea de todos os investimentos", "Gestão multi-marca unificada em um só lugar", "O mercado de gestão de marketing é fragmentado. Quem resolver isso primeiro, domina."] },
   { id: 2, title: "O Problema", subtitle: "R$ 1,5 Bilhão Desperdiçados por Ano", icon: Lightbulb, bullets: ["❌ Planilhas fragmentadas = decisões cegas", "❌ Aprovações por email = semanas de atraso", "❌ Zero rastreabilidade = auditoria impossível", "❌ Dados espalhados = oportunidades perdidas", "O resultado? CMOs demitidos, campanhas fracassadas e milhões evaporando."] },
   { id: 3, title: "A Solução", subtitle: "Controle Total em Tempo Real", icon: Rocket, bullets: ["✅ Visão 360° instantânea de toda a verba", "✅ Aprovações em minutos, não semanas", "✅ Auditoria e compliance automáticos", "✅ Gestão multi-marca unificada", "Uma única plataforma para governar todo o marketing"] },
   { id: 4, title: "Funcionalidades", subtitle: "Recursos que Transformam", icon: Award, bullets: ["Dashboards em tempo real com KPIs estratégicos", "Fluxo de aprovação configurável por alçada", "Logs de auditoria completos para compliance", "Comparativo orçado vs realizado automático", "Gestão de fornecedores integrada"] },
   { id: 5, title: "Mercado", subtitle: "Oceano Azul de R$ 5 Bilhões", icon: TrendingUp, bullets: ["TAM: R$ 5B+ (empresas com verba estruturada)", "SAM: R$ 800M (multi-marca e multi-unidade)", "SOM: R$ 80M (meta 5 anos)", "🎯 Go-to-Market: Médias empresas → escala para enterprise"] },
   { id: 6, title: "Público-Alvo", subtitle: "Estratégia de Expansão em 2 Fases", icon: Users, bullets: ["Fase 1 - Médias Empresas: R$ 500K-2M/ano em marketing", "Fase 2 - Grandes Empresas: R$ 2M+/ano", "Foco em empresas com estrutura de marketing madura", "Todos os setores com verba de marketing a partir de R$ 500K/ano"] },
-  { id: 7, title: "Diferenciais", subtitle: "Por que Romack Vision?", icon: Award, bullets: ["Especialização 100% em gestão de marketing", "Implementação em apenas 1 semana", "Usuários ilimitados em todos os planos", "Governança e compliance nativos incluídos"] },
+  { id: 7, title: "Diferenciais", subtitle: "Por que Mkt Vision?", icon: Award, bullets: ["Especialização 100% em gestão de marketing", "Implementação em apenas 1 semana", "Usuários ilimitados em todos os planos", "Governança e compliance nativos incluídos"] },
   { id: 8, title: "Competição", subtitle: "Análise Competitiva", icon: Target, bullets: ["vs Planilhas: Automação, dashboards, auditoria em tempo real", "vs ERPs: Especialização, implementação rápida, custo previsível", "Mercado fragmentado sem líder claro = oportunidade única"] },
   { id: 9, title: "Modelo de Negócio", subtitle: "Receita Recorrente Previsível", icon: DollarSign, bullets: ["Starter: R$ 1.500/mês (1 módulo, 3 marcas)", "Business: R$ 3.500/mês (2 módulos, 10 marcas, IA)", "Enterprise: R$ 7.000+/mês (completo, APIs, IA própria)", "💼 Taxa de implantação: R$ 3.000 (setup e onboarding)", "🔥 Diferencial: usuários ilimitados em todos os planos"] },
   { id: 10, title: "Projeções", subtitle: "Caminho para R$ 6,5M ARR", icon: TrendingUp, bullets: ["Ano 1: 5 clientes → ARR R$ 150K", "Ano 2: 15 clientes → ARR R$ 540K", "Ano 3: 35 clientes → ARR R$ 1.47M", "Ano 5: 120 clientes → ARR R$ 6.5M"] },
@@ -48,7 +48,7 @@ const PitchDeck = () => {
       <div className="border-b bg-card/50 backdrop-blur-sm sticky top-0 z-10 print:hidden">
         <div className="container mx-auto px-4 py-3 flex items-center justify-between">
           <div className="flex items-center gap-2">
-            <img src={RomackLogo} alt="Romack Vision" className="h-8 w-auto" />
+            <img src={RomackLogo} alt="Mkt Vision" className="h-8 w-auto" />
             <span className="text-muted-foreground text-sm ml-2">Pitch Deck</span>
           </div>
           <div className="flex items-center gap-4">

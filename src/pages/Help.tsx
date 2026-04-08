@@ -14,7 +14,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from '@/component
 import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from '@/components/ui/accordion';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { cn } from '@/lib/utils';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 
 // Images - annotated screenshots from the platform
 import imgDashboardPerformance from '@/assets/help/tut-dashboard-performance.jpg';
@@ -599,9 +599,7 @@ const glossaryItems = [
 
 const Help = () => {
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
-      
+    <AppLayout>
       <main className="container mx-auto py-8 px-4 max-w-5xl">
         {/* Header */}
         <div className="mb-10">
@@ -610,7 +608,7 @@ const Help = () => {
             <h1 className="text-3xl font-bold tracking-tight">Central de Ajuda</h1>
           </div>
           <p className="text-muted-foreground ml-11">
-            Guia completo para configuração e uso do sistema Romack Vision.
+            Guia completo para configuração e uso do sistema Mkt Vision.
           </p>
         </div>
 
@@ -647,7 +645,7 @@ const Help = () => {
                   <GraduationCap className="h-6 w-6 text-primary" />
                 </div>
                 <div>
-                  <h3 className="font-semibold text-lg mb-2">Bem-vindo ao Romack Vision!</h3>
+                  <h3 className="font-semibold text-lg mb-2">Bem-vindo ao Mkt Vision!</h3>
                   <p className="text-sm text-muted-foreground leading-relaxed mb-4">
                     O sistema completo de gestão de marketing e publicidade. Para configurar tudo corretamente, siga o fluxo abaixo na ordem indicada.
                   </p>
@@ -885,7 +883,7 @@ const Help = () => {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

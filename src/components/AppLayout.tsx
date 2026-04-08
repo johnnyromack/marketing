@@ -7,8 +7,8 @@ interface AppLayoutProps {
   children: ReactNode;
 }
 
-// Tab bar height (matches h-10 = 40px in TopTabBar)
-const TAB_BAR_H = '2.5rem';
+// Tab bar height (matches h-12 = 48px in TopTabBar)
+const TAB_BAR_H = '3rem';
 
 export const AppLayout = ({ children }: AppLayoutProps) => {
   return (

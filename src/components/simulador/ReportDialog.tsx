@@ -180,7 +180,7 @@ export function ReportDialog({
     const currentDate = new Date();
     const formattedDate = currentDate.toLocaleDateString('pt-BR');
     const formattedTime = currentDate.toLocaleTimeString('pt-BR');
-    const footerText = `RomackVision - ${formattedDate} - ${formattedTime} - marketing.raizeducacao.com.br`;
+    const footerText = `Mkt Vision - ${formattedDate} - ${formattedTime} - marketing.raizeducacao.com.br`;
     
     pdf.setFontSize(8);
     pdf.setTextColor(150, 150, 150);

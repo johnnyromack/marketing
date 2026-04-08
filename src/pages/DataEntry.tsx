@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -422,9 +422,7 @@ const DataEntry = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
-
+    <AppLayout>
       <main className="container mx-auto px-4 py-6 space-y-6">
         <Card>
           <CardHeader>
@@ -868,7 +866,7 @@ const DataEntry = () => {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

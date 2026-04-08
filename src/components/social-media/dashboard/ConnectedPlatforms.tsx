@@ -7,8 +7,19 @@ export function ConnectedPlatforms({ className, connectors, isLoading }: Connect
   const navigate = useNavigate();
 
   const getConnectorStatus = (platform: string) => {
-    const connector = connectors.find(c => c.platform === platform);
-    return connector?.status ?? 'disconnected';
+    // 'meta' in ads_integrations covers both instagram and facebook
+    // 'google' covers google_business
+    const candidates: Record<string, string[]> = {
+      instagram: ['instagram', 'meta'],
+      facebook: ['facebook', 'meta'],
+      google_business: ['google_business', 'google'],
+    };
+    const lookup = candidates[platform] ?? [platform];
+    const connector = connectors.find(c => lookup.includes(c.platform));
+    const status = connector?.status;
+    // Normalize: ads_integrations uses 'active', ConnectedPlatforms expects 'connected'
+    if (status === 'active') return 'connected';
+    return status ?? 'disconnected';
   };
 
   return (
@@ -19,7 +30,7 @@ export function ConnectedPlatforms({ className, connectors, isLoading }: Connect
             Plataformas Conectadas
           </h3>
           <button
-            onClick={() => navigate('/social-media/connectors')}
+            onClick={() => navigate('/social/connectors')}
             className="text-sm text-primary hover:underline"
           >
             Gerenciar

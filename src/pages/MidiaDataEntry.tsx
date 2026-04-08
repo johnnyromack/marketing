@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Loader2 } from 'lucide-react';
 import { MidiaOnForm } from '@/components/midia/MidiaOnForm';
@@ -41,9 +41,7 @@ const MidiaDataEntry = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
-
+    <AppLayout>
       <main className="container mx-auto px-4 py-6">
         <h1 className="text-2xl font-bold mb-6">Cadastro de Mídia</h1>
         
@@ -72,7 +70,7 @@ const MidiaDataEntry = () => {
           </TabsContent>
         </Tabs>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

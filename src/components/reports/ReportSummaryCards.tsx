@@ -63,7 +63,7 @@ export function ReportSummaryCards({ data, period }: ReportSummaryCardsProps) {
       value: current.spend,
       change: calcChange(current.spend, previous.spend),
       icon: Wallet,
-      format: (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2 })}`,
+      format: (v: number) => `R$ ${v.toLocaleString("pt-BR", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`,
     },
     {
       title: "Conversões",

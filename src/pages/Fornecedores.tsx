@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useActivityLog } from '@/hooks/useActivityLog';
 import { supabase } from '@/integrations/supabase/client';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -268,8 +268,7 @@ const Fornecedores = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
+    <AppLayout>
       <main className="container mx-auto px-4 py-6">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -507,7 +506,7 @@ const Fornecedores = () => {
           </CardContent>
         </Card>
       </main>
-    </div>
+    </AppLayout>
   );
 };
 

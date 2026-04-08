@@ -4,7 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
 import { useActivityLog } from '@/hooks/useActivityLog';
 import { supabase } from '@/integrations/supabase/client';
-import { AppHeader } from '@/components/AppHeader';
+import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -477,9 +477,7 @@ const AdminUsers = () => {
   }
 
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
-
+    <AppLayout>
       <main className="container mx-auto px-4 py-6 space-y-6">
         <div className="grid gap-6 lg:grid-cols-2">
           {/* Create User Form */}
@@ -860,7 +858,7 @@ const AdminUsers = () => {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </div>
+    </AppLayout>
   );
 };
 

@@ -273,13 +273,16 @@ async function syncAdAccount(
     if (!cid) continue;
     try {
       const ads = await fetchAllPages(
-        `${campaign.id}/ads?fields=id,name,status,creative{id,title,body,thumbnail_url,effective_object_story_id}&limit=500`,
+        `${campaign.id}/ads?fields=id,name,status,adset{id,name,status},creative{id,title,body,thumbnail_url,effective_object_story_id}&limit=500`,
         accessToken
       );
       for (const ad of ads) {
         try {
           const adStatus = ad.status?.toUpperCase() === "ACTIVE" ? "active" :
             ad.status?.toUpperCase() === "PAUSED" ? "paused" : "archived";
+          const adGroupStatus = ad.adset?.status?.toUpperCase() === "ACTIVE" ? "active" :
+            ad.adset?.status?.toUpperCase() === "PAUSED" ? "paused" :
+            ad.adset ? "archived" : null;
           let previewUrl: string | null = null;
           const storyId = ad.creative?.effective_object_story_id;
           if (storyId?.includes("_")) {
@@ -291,6 +294,8 @@ async function syncAdAccount(
             ad_external_id: ad.id,
             name: ad.name || `Ad ${ad.id}`,
             status: adStatus,
+            ad_group_status: adGroupStatus,
+            ad_group_external_id: ad.adset?.id || null,
             headline: ad.creative?.title || null,
             description: ad.creative?.body || null,
             type: "meta_ad",
@@ -500,7 +505,3 @@ Deno.serve(async (req) => {
 });
 
 
-
- git remote add origin https://github.com/johnnyromack/marketing.git                                                                                                       
-  git branch -M main                                                                                                                                                          
-  git push -u origin main

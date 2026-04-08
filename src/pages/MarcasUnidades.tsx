@@ -2,8 +2,8 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useMarcas, useUnidades, Marca, Unidade } from '@/hooks/useMarcasUnidades';
-import { AppHeader } from '@/components/AppHeader';
+import { useMarcas, useUnidades, useAdAccounts, Marca, Unidade } from '@/hooks/useMarcasUnidades';
+import { AppLayout } from '@/components/AppLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -34,16 +34,33 @@ import {
 } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
 import { toast } from 'sonner';
-import { Plus, Pencil, Trash2, Building2, MapPin, Loader2, DollarSign, ChevronDown } from 'lucide-react';
+import { Plus, Pencil, Trash2, Building2, MapPin, Loader2, DollarSign, ChevronDown, Link2, Search } from 'lucide-react';
 import { AddressAutocomplete } from '@/components/maps/AddressAutocomplete';
+
+const PLATFORM_LABELS: Record<string, string> = {
+  meta: 'Meta',
+  google: 'Google',
+  instagram: 'Instagram',
+  facebook: 'Facebook',
+  linkedin: 'LinkedIn',
+  tiktok: 'TikTok',
+};
 
 const MarcasUnidades = () => {
   const { user, loading: authLoading } = useAuth();
   const { canEditForms, loading: roleLoading } = useUserRole();
   const navigate = useNavigate();
-  
+
   const { marcas, loading: marcasLoading, createMarca, updateMarca, deleteMarca } = useMarcas();
   const { unidades, loading: unidadesLoading, createUnidade, updateUnidade, deleteUnidade } = useUnidades();
+  const { accounts, loading: accountsLoading, updateAccountByAccountId } = useAdAccounts();
+
+  // Inline editing state for ad accounts
+  const [editingAccount, setEditingAccount] = useState<string | null>(null); // account_id:platform key
+  const [editDisplayName, setEditDisplayName] = useState('');
+  const [editMarcaId, setEditMarcaId] = useState<string>('');
+  const [savingAccount, setSavingAccount] = useState<string | null>(null);
+  const [accountSearch, setAccountSearch] = useState('');
   
   // State for marca form
   const [newMarcaNome, setNewMarcaNome] = useState('');
@@ -163,6 +180,33 @@ const MarcasUnidades = () => {
     setProcessingId(null);
   };
 
+  const startEditAccount = (accountId: string, platform: string, displayName: string | null, marcaId: string | null) => {
+    setEditingAccount(`${accountId}:${platform}`);
+    setEditDisplayName(displayName ?? '');
+    setEditMarcaId(marcaId ?? '');
+  };
+
+  const saveAccount = async (accountId: string, platform: string) => {
+    const key = `${accountId}:${platform}`;
+    setSavingAccount(key);
+    await updateAccountByAccountId(accountId, platform, {
+      display_name: editDisplayName.trim() || null,
+      marca_id: editMarcaId || null,
+    });
+    setSavingAccount(null);
+    setEditingAccount(null);
+  };
+
+  const filteredAccounts = accounts.filter(a => {
+    const q = accountSearch.toLowerCase();
+    if (!q) return true;
+    return (
+      (a.display_name ?? '').toLowerCase().includes(q) ||
+      (a.account_name ?? '').toLowerCase().includes(q) ||
+      (a.account_id ?? '').includes(q)
+    );
+  });
+
   const getUnidadesByMarca = (marcaId: string) => {
     return unidades.filter(u => u.marca_id === marcaId);
   };
@@ -172,9 +216,7 @@ const MarcasUnidades = () => {
   };
 
   return (
-    <div className="min-h-screen bg-background transition-[margin] duration-200" style={{ marginLeft: 'var(--sidebar-w, 15rem)' }}>
-      <AppHeader />
-      
+    <AppLayout>
       <main className="container mx-auto px-4 py-8">
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
@@ -461,8 +503,142 @@ const MarcasUnidades = () => {
             )}
           </CardContent>
         </Card>
+
+        {/* Ad Accounts Card */}
+        <Card className="mt-6">
+          <CardHeader>
+            <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+              <CardTitle className="flex items-center gap-2">
+                <Link2 className="h-5 w-5" />
+                Contas de Mídia
+                <Badge variant="outline" className="ml-1 font-normal">
+                  {accounts.length} contas
+                </Badge>
+              </CardTitle>
+              <div className="relative w-full sm:w-64">
+                <Search className="absolute left-3 top-1/2 h-4 w-4 -translate-y-1/2 text-muted-foreground" />
+                <input
+                  value={accountSearch}
+                  onChange={e => setAccountSearch(e.target.value)}
+                  placeholder="Filtrar contas..."
+                  className="w-full rounded-md border border-input bg-background py-1.5 pl-9 pr-3 text-sm outline-none focus:border-primary"
+                />
+              </div>
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Dê um nome amigável a cada conta e vincule-a a uma marca. Contas Google sem nome aparecem como "Conta XXXXXXXXXX".
+            </p>
+          </CardHeader>
+          <CardContent>
+            {accountsLoading ? (
+              <div className="flex justify-center py-8">
+                <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+              </div>
+            ) : filteredAccounts.length === 0 ? (
+              <p className="py-8 text-center text-sm text-muted-foreground">Nenhuma conta ativa encontrada.</p>
+            ) : (
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="w-20">Plataforma</TableHead>
+                    <TableHead>Nome original</TableHead>
+                    <TableHead>Nome de exibição</TableHead>
+                    <TableHead>Marca vinculada</TableHead>
+                    <TableHead className="w-24 text-right">Ações</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {filteredAccounts.map(account => {
+                    const key = `${account.account_id}:${account.platform}`;
+                    const isEditing = editingAccount === key;
+                    const isSaving = savingAccount === key;
+                    const linkedMarca = marcas.find(m => m.id === account.marca_id);
+
+                    return (
+                      <TableRow key={account.id}>
+                        <TableCell>
+                          <Badge variant="secondary" className="text-xs">
+                            {PLATFORM_LABELS[account.platform] ?? account.platform}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="max-w-[180px] truncate text-sm text-muted-foreground" title={account.account_name}>
+                          {account.account_name}
+                        </TableCell>
+                        <TableCell>
+                          {isEditing ? (
+                            <Input
+                              value={editDisplayName}
+                              onChange={e => setEditDisplayName(e.target.value)}
+                              placeholder={account.account_name}
+                              className="h-8 text-sm"
+                              autoFocus
+                            />
+                          ) : (
+                            <span className={account.display_name ? 'font-medium' : 'text-muted-foreground text-sm italic'}>
+                              {account.display_name || 'Não definido'}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {isEditing ? (
+                            <select
+                              value={editMarcaId}
+                              onChange={e => setEditMarcaId(e.target.value)}
+                              className="h-8 w-full rounded-md border border-input bg-background px-2 text-sm outline-none focus:border-primary"
+                            >
+                              <option value="">— Sem marca —</option>
+                              {marcas.filter(m => m.ativo).map(m => (
+                                <option key={m.id} value={m.id}>{m.nome}</option>
+                              ))}
+                            </select>
+                          ) : (
+                            <span className={linkedMarca ? 'font-medium' : 'text-muted-foreground text-sm italic'}>
+                              {linkedMarca?.nome || 'Não vinculada'}
+                            </span>
+                          )}
+                        </TableCell>
+                        <TableCell className="text-right">
+                          {isEditing ? (
+                            <div className="flex justify-end gap-1">
+                              <Button
+                                size="sm"
+                                className="h-8 px-3"
+                                onClick={() => saveAccount(account.account_id, account.platform)}
+                                disabled={isSaving}
+                              >
+                                {isSaving ? <Loader2 className="h-3 w-3 animate-spin" /> : 'Salvar'}
+                              </Button>
+                              <Button
+                                size="sm"
+                                variant="outline"
+                                className="h-8 px-3"
+                                onClick={() => setEditingAccount(null)}
+                                disabled={isSaving}
+                              >
+                                ✕
+                              </Button>
+                            </div>
+                          ) : (
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              className="h-8 w-8"
+                              onClick={() => startEditAccount(account.account_id, account.platform, account.display_name, account.marca_id)}
+                            >
+                              <Pencil className="h-4 w-4" />
+                            </Button>
+                          )}
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            )}
+          </CardContent>
+        </Card>
       </main>
-      
+
       {/* Edit Marca Dialog */}
       <Dialog open={isEditMarcaDialogOpen} onOpenChange={setIsEditMarcaDialogOpen}>
         <DialogContent>
@@ -568,7 +744,7 @@ const MarcasUnidades = () => {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-    </div>
+    </AppLayout>
   );
 };
 

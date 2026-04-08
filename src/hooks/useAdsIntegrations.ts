@@ -8,6 +8,7 @@ export interface AdsIntegration {
   platform: 'meta' | 'google';
   account_id: string;
   account_name: string | null;
+  display_name: string | null;
   status: 'active' | 'expired' | 'revoked' | 'error';
   last_sync_at: string | null;
   sync_error: string | null;
@@ -198,23 +199,18 @@ export function useAdsIntegrations() {
   const syncIntegration = async (integrationId: string, platform: 'meta' | 'google') => {
     setSyncing(true);
     try {
-      // Sync legado (ads_campaigns/ads_creatives)
-      const functionName = platform === 'meta' ? 'meta-ads-sync' : 'google-ads-sync';
+      const functionName = platform === 'meta' ? 'sync-meta-ads' : 'sync-google-ads';
       const { data, error } = await supabase.functions.invoke(functionName, {
         body: { integration_id: integrationId },
       });
 
       if (error) throw error;
 
-      // Sync novo em paralelo (platform_campaigns/platform_campaign_metrics)
-      const newFunctionName = platform === 'meta' ? 'sync-meta-ads' : 'sync-google-ads';
-      supabase.functions.invoke(newFunctionName, {
-        body: { integration_id: integrationId },
-      }).catch(err => console.warn('Platform sync warning:', err));
+      const campaigns = data?.campaigns_processed ?? data?.integrations?.[0]?.accounts?.reduce((acc: number, a: any) => acc + (a.campaigns || 0), 0) ?? 0;
 
       toast({
         title: 'Sincronização concluída',
-        description: `${data.synced_campaigns || 0} campanhas e ${data.synced_ads || 0} anúncios sincronizados.`,
+        description: `${campaigns} campanhas sincronizadas.`,
       });
 
       await loadData();
@@ -236,23 +232,24 @@ export function useAdsIntegrations() {
       const metaIntegrations = integrations.filter(i => i.platform === 'meta' && i.status === 'active');
       const googleIntegrations = integrations.filter(i => i.platform === 'google' && i.status === 'active');
 
-      const results = await Promise.all([
-        metaIntegrations.length > 0 ? supabase.functions.invoke('meta-ads-sync', { body: {} }) : null,
-        googleIntegrations.length > 0 ? supabase.functions.invoke('google-ads-sync', { body: {} }) : null,
-      ]);
-
-      // Sync novo em paralelo (alimenta tabelas platform_*)
-      Promise.all([
+      const [metaResult, googleResult] = await Promise.all([
         metaIntegrations.length > 0 ? supabase.functions.invoke('sync-meta-ads', { body: {} }) : null,
         googleIntegrations.length > 0 ? supabase.functions.invoke('sync-google-ads', { body: {} }) : null,
-      ]).catch(err => console.warn('Platform sync warning:', err));
+      ]);
 
-      const totalCampaigns = results.reduce((acc, r) => acc + (r?.data?.synced_campaigns || 0), 0);
-      const totalAds = results.reduce((acc, r) => acc + (r?.data?.synced_ads || 0), 0);
+      const metaCampaigns = metaResult?.data?.campaigns_processed ?? 0;
+      const googleCampaigns = googleResult?.data?.integrations?.reduce(
+        (acc: number, i: any) => acc + i.accounts?.reduce((a: number, ac: any) => a + (ac.campaigns || 0), 0),
+        0
+      ) ?? 0;
+
+      const total = metaCampaigns + googleCampaigns;
 
       toast({
         title: 'Sincronização concluída',
-        description: `${totalCampaigns} campanhas e ${totalAds} anúncios sincronizados.`,
+        description: total > 0
+          ? `${total} campanhas sincronizadas (Meta: ${metaCampaigns}, Google: ${googleCampaigns}).`
+          : 'Sincronização concluída. Dados atualizados.',
       });
 
       await loadData();
@@ -293,6 +290,28 @@ export function useAdsIntegrations() {
     }
   };
 
+  const updateDisplayName = async (accountId: string, platform: 'meta' | 'google', displayName: string | null) => {
+    const { error } = await supabase
+      .from('ads_integrations')
+      .update({ display_name: displayName || null })
+      .eq('account_id', accountId)
+      .eq('platform', platform);
+
+    if (error) {
+      console.error('Error updating display name:', error);
+      return false;
+    }
+
+    setIntegrations(prev =>
+      prev.map(i =>
+        i.account_id === accountId && i.platform === platform
+          ? { ...i, display_name: displayName || null }
+          : i
+      )
+    );
+    return true;
+  };
+
   const updateCampaignMarca = async (campaignId: string, marca: string | null, unidade?: string | null) => {
     try {
       const { error } = await supabase
@@ -328,6 +347,7 @@ export function useAdsIntegrations() {
     syncIntegration,
     syncAll,
     disconnectIntegration,
+    updateDisplayName,
     updateCampaignMarca,
     refresh: loadData,
   };

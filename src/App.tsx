@@ -3,7 +3,7 @@ import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { ThemeProvider } from "next-themes";
 import { AuthProvider } from "@/hooks/useAuth";
 import { TabProvider } from "@/context/TabContext";
@@ -113,7 +113,7 @@ const App = () => (
                 <Route path="/social/automations" element={<SocialAutomations />} />
                 <Route path="/social/crisis" element={<SocialCrisis />} />
                 <Route path="/social/competitive" element={<SocialCompetitive />} />
-                <Route path="/social/connectors" element={<SocialConnectors />} />
+                <Route path="/social/connectors" element={<Navigate to="/integracoes" replace />} />
                 <Route path="/social/queries" element={<SocialQueries />} />
                 <Route path="/social/topics" element={<SocialTopics />} />
                 <Route path="/social/sources" element={<SocialSources />} />

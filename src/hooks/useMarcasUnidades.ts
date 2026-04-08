@@ -243,6 +243,93 @@ export const useUnidades = (marcaId?: string) => {
   };
 };
 
+// ── Ad Accounts (ads_integrations with display_name + marca_id) ───────────────
+
+export interface AdAccount {
+  id: string;
+  platform: string;
+  account_id: string;
+  account_name: string;
+  display_name: string | null;
+  marca_id: string | null;
+  status: string;
+}
+
+export const useAdAccounts = () => {
+  const [accounts, setAccounts] = useState<AdAccount[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  const fetchAccounts = async () => {
+    setLoading(true);
+    try {
+      const { data, error } = await supabase
+        .from('ads_integrations')
+        .select('id, platform, account_id, account_name, display_name, marca_id, status')
+        .in('status', ['active', 'connected'])
+        .order('platform')
+        .order('account_name');
+      if (error) throw error;
+      // Deduplicate: same account_id + platform may appear multiple times (one per user token)
+      const seen = new Set<string>();
+      const unique = (data || []).filter((r: AdAccount) => {
+        const key = `${r.platform}:${r.account_id}`;
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
+      setAccounts(unique);
+    } catch (err) {
+      console.error('Error fetching ad accounts:', err);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  useEffect(() => { fetchAccounts(); }, []);
+
+  const updateAccount = async (id: string, updates: { display_name?: string | null; marca_id?: string | null }) => {
+    try {
+      const { error } = await supabase
+        .from('ads_integrations')
+        .update(updates)
+        .eq('id', id);
+      if (error) throw error;
+      setAccounts(prev => prev.map(a => a.id === id ? { ...a, ...updates } : a));
+      toast.success('Conta atualizada');
+      return true;
+    } catch (err) {
+      toast.error('Erro ao atualizar conta');
+      return false;
+    }
+  };
+
+  // When display_name/marca_id is set on one record, apply to all records with same account_id+platform
+  const updateAccountByAccountId = async (
+    accountId: string,
+    platform: string,
+    updates: { display_name?: string | null; marca_id?: string | null }
+  ) => {
+    try {
+      const { error } = await supabase
+        .from('ads_integrations')
+        .update(updates)
+        .eq('account_id', accountId)
+        .eq('platform', platform);
+      if (error) throw error;
+      setAccounts(prev =>
+        prev.map(a => a.account_id === accountId && a.platform === platform ? { ...a, ...updates } : a)
+      );
+      toast.success('Conta atualizada');
+      return true;
+    } catch (err) {
+      toast.error('Erro ao atualizar conta');
+      return false;
+    }
+  };
+
+  return { accounts, loading, fetchAccounts, updateAccount, updateAccountByAccountId };
+};
+
 // Helper hook to get unidades by marca name (for backwards compatibility)
 export const useUnidadesByMarca = (marcaNome: string) => {
   const [unidades, setUnidades] = useState<string[]>(['Geral']);

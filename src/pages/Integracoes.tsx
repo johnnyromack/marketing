@@ -1,13 +1,14 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useAdsIntegrations, AdsIntegration } from '@/hooks/useAdsIntegrations';
 import { useMarcasUnidadesData } from '@/hooks/useMarcasUnidadesData';
 import { AppLayout } from '@/components/AppLayout';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
-import { Loader2, Link2, Unlink, RefreshCw, Facebook, AlertCircle, CheckCircle2 } from 'lucide-react';
+import { Loader2, Link2, Unlink, RefreshCw, Facebook, AlertCircle, CheckCircle2, Pencil, Check, X } from 'lucide-react';
 import { format } from 'date-fns';
 import { ptBR } from 'date-fns/locale';
 import {
@@ -35,13 +36,19 @@ const IntegrationCard = ({
   integration,
   onSync,
   onDisconnect,
+  onUpdateDisplayName,
   syncing,
 }: {
   integration: AdsIntegration;
   onSync: () => void;
   onDisconnect: () => void;
+  onUpdateDisplayName: (accountId: string, platform: 'meta' | 'google', name: string) => Promise<boolean>;
   syncing: boolean;
 }) => {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState('');
+  const [saving, setSaving] = useState(false);
+
   const statusConfig = {
     active: { label: 'Ativo', variant: 'default' as const, icon: CheckCircle2 },
     expired: { label: 'Token Expirado', variant: 'destructive' as const, icon: AlertCircle },
@@ -51,29 +58,71 @@ const IntegrationCard = ({
 
   const status = statusConfig[integration.status];
   const StatusIcon = status.icon;
+  const displayTitle = integration.display_name || integration.account_name || integration.account_id;
+
+  const startEdit = () => {
+    setDraft(integration.display_name || integration.account_name || '');
+    setEditing(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      const ok = await onUpdateDisplayName(integration.account_id, integration.platform, draft.trim());
+      if (ok) setEditing(false);
+    } finally {
+      setSaving(false);
+    }
+  };
 
   return (
     <Card>
       <CardContent className="pt-6">
-        <div className="flex items-start justify-between">
-          <div className="flex items-center gap-3">
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-center gap-3 min-w-0 flex-1">
             {integration.platform === 'meta' ? (
-              <div className="h-10 w-10 rounded-full bg-blue-600 flex items-center justify-center">
+              <div className="h-10 w-10 flex-shrink-0 rounded-full bg-blue-600 flex items-center justify-center">
                 <Facebook className="h-5 w-5 text-white" />
               </div>
             ) : (
-              <div className="h-10 w-10 rounded-full bg-white border flex items-center justify-center">
+              <div className="h-10 w-10 flex-shrink-0 rounded-full bg-white border flex items-center justify-center">
                 <GoogleIcon />
               </div>
             )}
-            <div>
-              <h3 className="font-medium">{integration.account_name || integration.account_id}</h3>
+            <div className="min-w-0 flex-1">
+              {editing ? (
+                <div className="flex items-center gap-2">
+                  <Input
+                    value={draft}
+                    onChange={e => setDraft(e.target.value)}
+                    onKeyDown={e => { if (e.key === 'Enter') save(); if (e.key === 'Escape') setEditing(false); }}
+                    className="h-8 text-sm"
+                    autoFocus
+                  />
+                  <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0 text-green-600" onClick={save} disabled={saving}>
+                    {saving ? <Loader2 className="h-4 w-4 animate-spin" /> : <Check className="h-4 w-4" />}
+                  </Button>
+                  <Button size="icon" variant="ghost" className="h-8 w-8 flex-shrink-0" onClick={() => setEditing(false)} disabled={saving}>
+                    <X className="h-4 w-4" />
+                  </Button>
+                </div>
+              ) : (
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-medium truncate">{displayTitle}</h3>
+                  <button onClick={startEdit} className="flex-shrink-0 text-muted-foreground hover:text-foreground transition-colors">
+                    <Pencil className="h-3.5 w-3.5" />
+                  </button>
+                </div>
+              )}
               <p className="text-sm text-muted-foreground">
-                {integration.platform === 'meta' ? 'Meta Ads' : 'Google Ads'}
+                {integration.platform === 'meta' ? 'Meta Ads' : 'Google Ads'} · {integration.account_id}
               </p>
+              {integration.display_name && integration.account_name && integration.display_name !== integration.account_name && (
+                <p className="text-xs text-muted-foreground/60 truncate">{integration.account_name}</p>
+              )}
             </div>
           </div>
-          <Badge variant={status.variant} className="flex items-center gap-1">
+          <Badge variant={status.variant} className="flex-shrink-0 flex items-center gap-1">
             <StatusIcon className="h-3 w-3" />
             {status.label}
           </Badge>
@@ -147,6 +196,7 @@ const Integracoes = () => {
     syncIntegration,
     syncAll,
     disconnectIntegration,
+    updateDisplayName,
   } = useAdsIntegrations();
 
   useEffect(() => {
@@ -222,6 +272,7 @@ const Integracoes = () => {
                       integration={integration}
                       onSync={() => syncIntegration(integration.id, 'meta')}
                       onDisconnect={() => disconnectIntegration(integration.id)}
+                      onUpdateDisplayName={updateDisplayName}
                       syncing={syncing}
                     />
                   ))}
