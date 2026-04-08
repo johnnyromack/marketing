@@ -21,7 +21,18 @@ const Auth = () => {
   const navigate = useNavigate();
   const { toast } = useToast();
 
-  // Redirect to home once authenticated
+  // Handle OAuth implicit flow: #access_token= arrives in URL hash
+  useEffect(() => {
+    if (!window.location.hash.includes('access_token=')) return;
+    supabase.auth.getSessionFromUrl({ storeSession: true }).then(({ data, error }) => {
+      if (data?.session) {
+        window.history.replaceState({}, '', window.location.pathname);
+        navigate('/home', { replace: true });
+      }
+    });
+  }, []);
+
+  // Redirect to home once authenticated (email/password flow)
   useEffect(() => {
     if (!loading && user) {
       navigate('/home', { replace: true });
